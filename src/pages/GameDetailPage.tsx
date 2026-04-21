@@ -1,230 +1,28 @@
 import React, { useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Gamepad2, ShieldCheck, Zap, Headphones, Star, X, Send, Info, CreditCard, Clock, CheckCircle, Plus, Minus, Languages, Loader2, ChevronUp, ChevronDown } from "lucide-react";
-import { GAMES_DATA } from "@/components/ControlledChaos/StickyWorks";
+import { ArrowLeft, Gamepad2, ShieldCheck, Zap, Headphones, Star, X, Send, Info, CreditCard, Clock, CheckCircle, Plus, Minus, Languages, Loader2, ChevronUp, ChevronDown, HelpCircle, ImagePlus, LogIn, Flame, Trophy, Sparkles } from "lucide-react";
+import { useGames } from "@/components/ControlledChaos/GamesContext";
+import { useSettings } from "@/components/ControlledChaos/SettingsContext";
+import { useCoupons } from "@/components/ControlledChaos/CouponContext";
 import { GlobalStyles } from "@/components/ControlledChaos/GlobalStyles";
 import { BrutalButton } from "@/components/ControlledChaos/BrutalButton";
 import { useLang } from "@/components/ControlledChaos/LangContext";
+import { useLogin } from "@/components/ControlledChaos/LoginContext";
+import { useOrders } from "@/components/ControlledChaos/OrderContext";
+import { VideoTutorialModal } from "@/components/ControlledChaos/VideoTutorialModal";
+import { useWallet } from "@/components/ControlledChaos/WalletContext";
+import { GemIcon } from "@/components/ControlledChaos/GemIcon";
 
-const WHATSAPP_NUMBER = "201063006506";
-
-interface Package {
-  name: string;
-  price: string;
-  popular?: boolean;
-  image?: string;
-}
-
-// Package placeholder images - different visuals per tier
 const PKG_IMAGES = [
-  "https://images.unsplash.com/photo-1621761191319-c6fb62004040?w=400&q=80", // coins/gold
-  "https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?w=400&q=80", // treasure
-  "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&q=80", // abstract purple
-  "https://images.unsplash.com/photo-1633356122102-3fe601e05bd2?w=400&q=80", // neon
-  "https://images.unsplash.com/photo-1614850523459-c2f4c699c52e?w=400&q=80", // crystals
-  "https://images.unsplash.com/photo-1635322966219-b75ed372eb01?w=400&q=80", // gems
+  "https://images.unsplash.com/photo-1621761191319-c6fb62004040?w=400&q=80", 
+  "https://images.unsplash.com/photo-1526304640581-d334cdbbf45e?w=400&q=80", 
+  "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=400&q=80", 
+  "https://images.unsplash.com/photo-1633356122102-3fe601e05bd2?w=400&q=80", 
+  "https://images.unsplash.com/photo-1614850523459-c2f4c699c52e?w=400&q=80", 
+  "https://images.unsplash.com/photo-1635322966219-b75ed372eb01?w=400&q=80", 
 ];
 
-const GAME_PACKAGES: Record<string, Package[]> = {
-  "pubg-mobile": [
-    { name: "60 UC", price: "25 جنيه", image: "https://i.pinimg.com/1200x/a1/e5/5c/a1e55cd5aaf0cc7ac32525adf4ff0506.jpg" },
-    { name: "325 UC", price: "120 جنيه", image: "https://i.pinimg.com/1200x/a1/e5/5c/a1e55cd5aaf0cc7ac32525adf4ff0506.jpg" },
-    { name: "660 UC", price: "230 جنيه", popular: true, image: "https://i.pinimg.com/1200x/a1/e5/5c/a1e55cd5aaf0cc7ac32525adf4ff0506.jpg" },
-    { name: "1800 UC", price: "600 جنيه", image: "https://i.pinimg.com/1200x/a1/e5/5c/a1e55cd5aaf0cc7ac32525adf4ff0506.jpg" },
-    { name: "3850 UC", price: "1200 جنيه", image: "https://i.pinimg.com/1200x/a1/e5/5c/a1e55cd5aaf0cc7ac32525adf4ff0506.jpg" },
-    { name: "8100 UC", price: "2400 جنيه", image: "https://i.pinimg.com/1200x/a1/e5/5c/a1e55cd5aaf0cc7ac32525adf4ff0506.jpg" },
-  ],
-  "call-of-duty-mobile": [
-    { name: "80 CP", price: "30 جنيه", image: "https://i.pinimg.com/736x/25/5b/42/255b42d170bcb6be7a9306d3e7534423.jpg" },
-    { name: "400 CP", price: "140 جنيه", image: "https://i.pinimg.com/736x/25/5b/42/255b42d170bcb6be7a9306d3e7534423.jpg" },
-    { name: "880 CP", price: "280 جنيه", popular: true, image: "https://i.pinimg.com/736x/25/5b/42/255b42d170bcb6be7a9306d3e7534423.jpg" },
-    { name: "2400 CP", price: "750 جنيه", image: "https://i.pinimg.com/736x/25/5b/42/255b42d170bcb6be7a9306d3e7534423.jpg" },
-    { name: "5000 CP", price: "1500 جنيه", image: "https://i.pinimg.com/736x/25/5b/42/255b42d170bcb6be7a9306d3e7534423.jpg" },
-  ],
-  "fortnite": [
-    { name: "1000 V-Bucks", price: "200 جنيه", image: "https://i.pinimg.com/1200x/c1/01/e9/c101e952596d47d2b14bc8666a01d44a.jpg" },
-    { name: "2800 V-Bucks", price: "500 جنيه", popular: true, image: "https://i.pinimg.com/1200x/c1/01/e9/c101e952596d47d2b14bc8666a01d44a.jpg" },
-    { name: "5000 V-Bucks", price: "850 جنيه", image: "https://i.pinimg.com/1200x/c1/01/e9/c101e952596d47d2b14bc8666a01d44a.jpg" },
-    { name: "13500 V-Bucks", price: "2000 جنيه", image: "https://i.pinimg.com/1200x/c1/01/e9/c101e952596d47d2b14bc8666a01d44a.jpg" },
-  ],
-  "Mobile Legends": [
-    { name: "650 RP", price: "150 جنيه", image: "https://i.pinimg.com/1200x/d0/22/50/d02250140705fc8af43e18f17c69d31e.jpg" },
-    { name: "1380 RP", price: "300 جنيه", popular: true, image: "https://i.pinimg.com/1200x/d0/22/50/d02250140705fc8af43e18f17c69d31e.jpg" },
-    { name: "2800 RP", price: "580 جنيه", image: "https://i.pinimg.com/1200x/d0/22/50/d02250140705fc8af43e18f17c69d31e.jpg" },
-    { name: "5000 RP", price: "1000 جنيه", image: "https://i.pinimg.com/1200x/d0/22/50/d02250140705fc8af43e18f17c69d31e.jpg" },
-  ],
-  "efootball-pes-mobile": [
-    { name: "100 eFootball Coins", price: "50 جنيه", image: "https://i.pinimg.com/736x/0b/d8/d4/0bd8d422c8ee3a3c3610837e230d247b.jpg" },
-    { name: "500 eFootball Coins", price: "240 جنيه", image: "https://i.pinimg.com/736x/0b/d8/d4/0bd8d422c8ee3a3c3610837e230d247b.jpg" },
-    { name: "1000 eFootball Coins", price: "450 جنيه", popular: true, image: "https://i.pinimg.com/736x/0b/d8/d4/0bd8d422c8ee3a3c3610837e230d247b.jpg" },
-    { name: "2100 eFootball Coins", price: "900 جنيه", image: "https://i.pinimg.com/736x/0b/d8/d4/0bd8d422c8ee3a3c3610837e230d247b.jpg" },
-    { name: "Value Match Pass", price: "150 جنيه", image: "https://i.pinimg.com/736x/0b/d8/d4/0bd8d422c8ee3a3c3610837e230d247b.jpg" },
-  ],
-  "genshin-impact": [
-    { name: "60 Genesis Crystals", price: "30 جنيه", image: "https://i.pinimg.com/736x/11/5b/34/115b34a5552d6c56fc1d7d1001b20800.jpg" },
-    { name: "300 Genesis Crystals", price: "150 جنيه", image: "https://i.pinimg.com/736x/11/5b/34/115b34a5552d6c56fc1d7d1001b20800.jpg" },
-    { name: "980 Genesis Crystals", price: "450 جنيه", popular: true, image: "https://i.pinimg.com/736x/11/5b/34/115b34a5552d6c56fc1d7d1001b20800.jpg" },
-    { name: "1980 Genesis Crystals", price: "900 جنيه", image: "https://i.pinimg.com/736x/11/5b/34/115b34a5552d6c56fc1d7d1001b20800.jpg" },
-    { name: "Welkin Moon", price: "120 جنيه", image: "https://i.pinimg.com/736x/11/5b/34/115b34a5552d6c56fc1d7d1001b20800.jpg" },
-  ],
-  "free-fire": [
-    { name: "100 Diamonds", price: "20 جنيه", image: "https://i.pinimg.com/736x/f3/7d/21/f37d2191d9bc1cd979cb742b00d5ffae.jpg" },
-    { name: "310 Diamonds", price: "55 جنيه", image: "https://i.pinimg.com/736x/f3/7d/21/f37d2191d9bc1cd979cb742b00d5ffae.jpg" },
-    { name: "520 Diamonds", price: "100 جنيه", popular: true, image: "https://i.pinimg.com/736x/f3/7d/21/f37d2191d9bc1cd979cb742b00d5ffae.jpg" },
-    { name: "1060 Diamonds", price: "200 جنيه", image: "https://i.pinimg.com/736x/f3/7d/21/f37d2191d9bc1cd979cb742b00d5ffae.jpg" },
-    { name: "2180 Diamonds", price: "400 جنيه", image: "https://i.pinimg.com/736x/f3/7d/21/f37d2191d9bc1cd979cb742b00d5ffae.jpg" },
-  ],
-  "valorant": [
-    { name: "475 VP", price: "120 جنيه", image: "https://i.pinimg.com/1200x/0b/d2/90/0bd29018298b5bb1ecc31f247e283587.jpg" },
-    { name: "1000 VP", price: "240 جنيه", image: "https://i.pinimg.com/1200x/0b/d2/90/0bd29018298b5bb1ecc31f247e283587.jpg" },
-    { name: "2050 VP", price: "470 جنيه", popular: true, image: "https://i.pinimg.com/1200x/0b/d2/90/0bd29018298b5bb1ecc31f247e283587.jpg" },
-    { name: "3650 VP", price: "800 جنيه", image: "https://i.pinimg.com/1200x/0b/d2/90/0bd29018298b5bb1ecc31f247e283587.jpg" },
-    { name: "5350 VP", price: "1150 جنيه", image: "https://i.pinimg.com/1200x/0b/d2/90/0bd29018298b5bb1ecc31f247e283587.jpg" },
-  ],
-  "roblox": [
-    { name: "400 Robux", price: "120 جنيه", image: "https://i.pinimg.com/736x/ff/0d/d4/ff0dd41f3a2b13c7f098be411259a264.jpg" },
-    { name: "800 Robux", price: "230 جنيه", popular: true, image: "https://i.pinimg.com/736x/ff/0d/d4/ff0dd41f3a2b13c7f098be411259a264.jpg" },
-    { name: "1700 Robux", price: "460 جنيه", image: "https://i.pinimg.com/736x/ff/0d/d4/ff0dd41f3a2b13c7f098be411259a264.jpg" },
-    { name: "4500 Robux", price: "1100 جنيه", image: "https://i.pinimg.com/736x/ff/0d/d4/ff0dd41f3a2b13c7f098be411259a264.jpg" },
-  ],
-  "clash-of-clans": [
-    { name: "80 Gems", price: "25 جنيه", image: "https://i.pinimg.com/736x/f1/0a/d8/f10ad873ddc910a301dc46d835d8d762.jpg" },
-    { name: "500 Gems", price: "120 جنيه", image: "https://i.pinimg.com/736x/f1/0a/d8/f10ad873ddc910a301dc46d835d8d762.jpg" },
-    { name: "1200 Gems", price: "250 جنيه", popular: true, image: "https://i.pinimg.com/736x/f1/0a/d8/f10ad873ddc910a301dc46d835d8d762.jpg" },
-    { name: "2500 Gems", price: "500 جنيه", image: "https://i.pinimg.com/736x/f1/0a/d8/f10ad873ddc910a301dc46d835d8d762.jpg" },
-    { name: "Gold Pass", price: "130 جنيه", image: "https://i.pinimg.com/736x/f1/0a/d8/f10ad873ddc910a301dc46d835d8d762.jpg" },
-  ],
-  "fifa-ea-fc": [
-    { name: "500 coins", price: "130 جنيه", image: "https://i.pinimg.com/1200x/e0/ea/a4/e0eaa49dc67ec8bbbd6924801d1d0c95.jpg" },
-    { name: "1050 coins", price: "260 جنيه", image: "https://i.pinimg.com/1200x/e0/ea/a4/e0eaa49dc67ec8bbbd6924801d1d0c95.jpg" },
-    { name: "2200 coins", price: "520 جنيه", popular: true, image: "https://i.pinimg.com/1200x/e0/ea/a4/e0eaa49dc67ec8bbbd6924801d1d0c95.jpg" },
-    { name: "4600 coins", price: "1050 جنيه", image: "https://i.pinimg.com/1200x/e0/ea/a4/e0eaa49dc67ec8bbbd6924801d1d0c95.jpg" },
-  ],
-  "minecraft": [
-    { name: "320 Minecoins", price: "50 جنيه", image: "https://i.pinimg.com/736x/6c/86/b5/6c86b598fe8ed62abc9b9816c5a25108.jpg" },
-    { name: "1020 Minecoins", price: "150 جنيه", popular: true, image: "https://i.pinimg.com/736x/6c/86/b5/6c86b598fe8ed62abc9b9816c5a25108.jpg" },
-    { name: "1720 Minecoins", price: "240 جنيه", image: "https://i.pinimg.com/736x/6c/86/b5/6c86b598fe8ed62abc9b9816c5a25108.jpg" },
-    { name: "Premium Account", price: "350 جنيه", image: "https://i.pinimg.com/736x/6c/86/b5/6c86b598fe8ed62abc9b9816c5a25108.jpg" },
-  ],
-};
-
-// Game-specific field configs
-interface GameFieldConfig {
-  fields: { key: string; label: string; placeholder: string; required: boolean }[];
-  chargingInfo: string[];
-  chargingMethod: string;
-  deliveryTime: string;
-}
-
-const GAME_FIELD_CONFIG: Record<string, GameFieldConfig> = {
-  "pubg-mobile": {
-    fields: [
-      { key: "playerId", label: "Player ID", placeholder: "أدخل Player ID الخاص بك", required: true },
-      { key: "serverId", label: "Server ID (Zone ID)", placeholder: "مثال: 5XXX", required: false },
-    ],
-    chargingInfo: ["يتم الشحن عبر ID مباشرة بدون كلمة سر", "تأكد من صحة الـ ID قبل الإرسال", "الشحن يتم خلال دقائق من تأكيد الدفع"],
-    chargingMethod: "Vodafone Cash / InstaPay / تحويل بنكي",
-    deliveryTime: "5 - 15 دقيقة",
-  },
-  "call-of-duty-mobile": {
-    fields: [
-      { key: "playerId", label: "Player UID", placeholder: "أدخل UID الخاص بك من إعدادات اللعبة", required: true },
-      { key: "openId", label: "Open ID", placeholder: "أدخل Open ID (إن وجد)", required: false },
-    ],
-    chargingInfo: ["يمكنك إيجاد UID من داخل اللعبة > الإعدادات > Legal & Privacy", "الشحن يتم مباشرة على حسابك"],
-    chargingMethod: "Vodafone Cash / InstaPay",
-    deliveryTime: "5 - 30 دقيقة",
-  },
-  "fortnite": {
-    fields: [
-      { key: "epicEmail", label: "Epic Games Email", placeholder: "أدخل إيميل حساب Epic Games", required: true },
-      { key: "epicDisplay", label: "Display Name", placeholder: "اسم العرض في Epic Games", required: true },
-    ],
-    chargingInfo: ["يتم الشحن عبر حساب Epic Games", "لا نحتاج كلمة السر — فقط الإيميل واسم العرض", "قد يتطلب تأكيد عبر إيميل Epic"],
-    chargingMethod: "Vodafone Cash / InstaPay / تحويل بنكي",
-    deliveryTime: "15 - 60 دقيقة",
-  },
-  "league-of-legends": {
-    fields: [
-      { key: "riotId", label: "Riot ID", placeholder: "مثال: Player#TAG", required: true },
-      { key: "server", label: "السيرفر", placeholder: "مثال: EUW, EUNE, NA", required: true },
-    ],
-    chargingInfo: ["يتم الشحن عبر Riot ID مباشرة", "تأكد من السيرفر الصحيح لحسابك"],
-    chargingMethod: "Vodafone Cash / InstaPay",
-    deliveryTime: "10 - 30 دقيقة",
-  },
-  "genshin-impact": {
-    fields: [
-      { key: "playerId", label: "UID", placeholder: "أدخل UID من داخل اللعبة", required: true },
-      { key: "server", label: "السيرفر", placeholder: "مثال: Asia, Europe, America", required: true },
-    ],
-    chargingInfo: ["يتم الشحن عبر UID مباشرة بدون كلمة سر", "تأكد من اختيار السيرفر الصحيح", "Welkin Moon يتم تفعيله فوراً"],
-    chargingMethod: "Vodafone Cash / InstaPay",
-    deliveryTime: "5 - 15 دقيقة",
-  },
-  "free-fire": {
-    fields: [
-      { key: "playerId", label: "Player ID", placeholder: "أدخل ID اللاعب من داخل اللعبة", required: true },
-    ],
-    chargingInfo: ["الشحن فوري عبر ID فقط", "لا نحتاج كلمة سر أو إيميل"],
-    chargingMethod: "Vodafone Cash / InstaPay",
-    deliveryTime: "1 - 10 دقائق",
-  },
-  "valorant": {
-    fields: [
-      { key: "riotId", label: "Riot ID", placeholder: "مثال: Player#TAG", required: true },
-      { key: "server", label: "السيرفر", placeholder: "مثال: EU, NA, AP", required: true },
-    ],
-    chargingInfo: ["يتم الشحن عبر Riot ID", "تأكد من السيرفر الصحيح"],
-    chargingMethod: "Vodafone Cash / InstaPay",
-    deliveryTime: "10 - 30 دقيقة",
-  },
-  "roblox": {
-    fields: [
-      { key: "username", label: "Roblox Username", placeholder: "أدخل اسم المستخدم في Roblox", required: true },
-    ],
-    chargingInfo: ["يتم إرسال Robux عبر Game Pass أو Group Funds", "سيتم التواصل معك لتأكيد الطريقة"],
-    chargingMethod: "Vodafone Cash / InstaPay",
-    deliveryTime: "15 - 60 دقيقة",
-  },
-  "clash-of-clans": {
-    fields: [
-      { key: "playerTag", label: "Player Tag", placeholder: "مثال: #XXXXXXXX", required: true },
-    ],
-    chargingInfo: ["يتم الشحن عبر Player Tag", "Gold Pass يتم تفعيله مباشرة"],
-    chargingMethod: "Vodafone Cash / InstaPay",
-    deliveryTime: "5 - 20 دقيقة",
-  },
-  "fifa-ea-fc": {
-    fields: [
-      { key: "platform", label: "المنصة", placeholder: "PS / Xbox / PC", required: true },
-      { key: "eaEmail", label: "EA Email", placeholder: "أدخل إيميل حساب EA", required: true },
-    ],
-    chargingInfo: ["يتم الشحن عبر حساب EA مباشرة", "تأكد من ربط المنصة الصحيحة بحسابك"],
-    chargingMethod: "Vodafone Cash / InstaPay / تحويل بنكي",
-    deliveryTime: "30 - 60 دقيقة",
-  },
-  "minecraft": {
-    fields: [
-      { key: "username", label: "Minecraft Username", placeholder: "أدخل اسم المستخدم", required: true },
-      { key: "edition", label: "النسخة", placeholder: "Java / Bedrock", required: true },
-    ],
-    chargingInfo: ["يتم إرسال الكود عبر واتساب", "تأكد من اختيار النسخة الصحيحة"],
-    chargingMethod: "Vodafone Cash / InstaPay",
-    deliveryTime: "10 - 30 دقيقة",
-  },
-  "efootball-pes-mobile": {
-    fields: [
-      { key: "ownerId", label: "Owner ID", placeholder: "أدخل Owner ID الخاص بك", required: true },
-      { key: "region", label: "Region", placeholder: "مثال: Europe / Middle East", required: true },
-    ],
-    chargingInfo: ["يتم الشحن عبر Owner ID مباشرة", "لا نحتاج لبيانات الدخول", "الشحن يتم خلال دقائق"],
-    chargingMethod: "Vodafone Cash / InstaPay",
-    deliveryTime: "5 - 15 دقيقة",
-  },
-};
-
-const DEFAULT_FIELD_CONFIG: GameFieldConfig = {
+const DEFAULT_FIELD_CONFIG = {
   fields: [
     { key: "playerId", label: "Player ID", placeholder: "أدخل ID الخاص بك", required: true },
   ],
@@ -234,26 +32,40 @@ const DEFAULT_FIELD_CONFIG: GameFieldConfig = {
 };
 
 function slugify(name: string) {
-  return name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+  if (!name) return "";
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/[^\p{L}\p{N}]+/gu, "-") // Matches Unicode letters and numbers
+    .replace(/(^-|-$)/g, "");
 }
 
 export default function GameDetailPage() {
   const { slug } = useParams<{ slug: string }>();
-  const game = GAMES_DATA.find((g) => slugify(g.name) === slug);
+  const { games } = useGames();
+  const { settings } = useSettings();
+  const { coupons } = useCoupons();
+  
+  // Find by slugified name OR by direct ID (fallback)
+  const game = games.find((g) => slugify(g.name) === slug || g.id === slug);
+  const { savedAccounts, isLoggedIn, userData, openLogin } = useLogin();
+  const { addOrder } = useOrders();
+  const { balance, spendGems } = useWallet();
 
   const [modalOpen, setModalOpen] = useState(false);
-  const [selectedPkg, setSelectedPkg] = useState<Package | null>(null);
+  const [selectedPkg, setSelectedPkg] = useState<any | null>(null);
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [playerName, setPlayerName] = useState("");
   const [showInfo, setShowInfo] = useState(false);
   const { lang, toggleLang, t } = useLang();
-  const [paymentMethod, setPaymentMethod] = useState("vodafone");
-  const [username, setUsername] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState(settings.paymentAccounts[0]?.id || "other");
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [promoCode, setPromoCode] = useState("");
   const [discount, setDiscount] = useState(0);
   const [promoError, setPromoError] = useState("");
   const [quantity, setQuantity] = useState(1);
+  const [isTutorialOpen, setIsTutorialOpen] = useState(false);
+  const [senderValue, setSenderValue] = useState("");
   const MAX_QUANTITY = 22;
   const checkoutScrollRef = React.useRef<HTMLDivElement>(null);
 
@@ -262,6 +74,10 @@ export default function GameDetailPage() {
     step: "checking",
     orderId: ""
   });
+  
+  const [checkoutStep, setCheckoutStep] = useState(1);
+  const [transferProof, setTransferProof] = useState<string | null>(null);
+  const [isVerifying, setIsVerifying] = useState(false);
 
   const [isOtherModalOpen, setIsOtherModalOpen] = useState(false);
   const [otherCountry, setOtherCountry] = useState("");
@@ -270,6 +86,37 @@ export default function GameDetailPage() {
   const [otherMethodInput, setOtherMethodInput] = useState("");
   const [isCountryDropdownOpen, setIsCountryDropdownOpen] = useState(false);
   const [isSuggestionsOpen, setIsSuggestionsOpen] = useState(false);
+
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  if (!game) {
+    return (
+      <>
+        <GlobalStyles />
+        <div className="min-h-screen flex flex-col items-center justify-center" style={{ backgroundColor: "var(--c-bg)", color: "var(--c-ink)" }}>
+          <h1 className="text-6xl font-black uppercase mb-4">Game Not Found</h1>
+          <Link to="/games">
+            <BrutalButton>Back to Games</BrutalButton>
+          </Link>
+        </div>
+      </>
+    );
+  }
+
+  const gameSavedAccounts = savedAccounts.filter(acc => 
+    acc.game.toLowerCase() === game.name.toLowerCase()
+  );
+
+  const fieldConfig = game.fieldConfig || DEFAULT_FIELD_CONFIG;
+  const packages = game.packages || [];
+
+  const formatPrice = (price: string | number) => {
+    const num = typeof price === 'number' ? price : (parseInt(price.replace(/\D/g, ""), 10) || 0);
+    if (settings.currencySuffix) {
+      return `${num} ${settings.currencySymbol || "ج.م"}`;
+    }
+    return `${settings.currencySymbol || "ج.م"}${num}`;
+  };
 
   const ARAB_COUNTRIES = [
     { name: "مصر", flag: "🇪🇬", code: "eg", suffix: "(الدولة المستضيفة)" },
@@ -306,29 +153,7 @@ export default function GameDetailPage() {
     "Vodafone Cash", "InstaPay", "STC Pay", "Urpay", "Zain Cash", "PayPal", "Apple Pay", "Google Pay", "Fawry", "Mada", "Aman", "Orange Money", "Etisalat Cash", "Sadaq", "CashU"
   ];
 
-  if (!game) {
-    return (
-      <>
-        <GlobalStyles />
-        <div className="min-h-screen flex flex-col items-center justify-center" style={{ backgroundColor: "var(--c-bg)", color: "var(--c-ink)" }}>
-          <h1 className="text-6xl font-black uppercase mb-4">Game Not Found</h1>
-          <Link to="/games">
-            <BrutalButton>Back to Games</BrutalButton>
-          </Link>
-        </div>
-      </>
-    );
-  }
-
-  const fieldConfig = GAME_FIELD_CONFIG[slug!] || DEFAULT_FIELD_CONFIG;
-
-  const packages = GAME_PACKAGES[slug!] || [
-    { name: "Basic Pack", price: "100 جنيه" },
-    { name: "Standard Pack", price: "250 جنيه", popular: true },
-    { name: "Premium Pack", price: "500 جنيه" },
-  ];
-
-  const openModal = (pkg: Package) => {
+  const openModal = (pkg: any) => {
     setSelectedPkg(pkg);
     setFormData({});
     setPlayerName("");
@@ -336,13 +161,18 @@ export default function GameDetailPage() {
     setQuantity(1);
     setDiscount(0);
     setPromoError("");
+    setCheckoutStep(1);
+    setTransferProof(null);
+    setIsVerifying(false);
+    setSenderValue("");
     setModalOpen(true);
   };
 
   const handleApplyPromo = () => {
     const code = promoCode.trim().toUpperCase();
-    if (code === "LORD15" || code === "WELCOME") {
-      setDiscount(0.15);
+    const found = coupons.find(c => c.code.toUpperCase() === code && c.isActive);
+    if (found) {
+      setDiscount(found.discountPercent);
       setPromoError("");
     } else {
       setDiscount(0);
@@ -350,41 +180,90 @@ export default function GameDetailPage() {
     }
   };
 
-  const sendWhatsApp = () => {
-    if (!selectedPkg) return;
-    setModalOpen(false); // Close the package form modal
-    const generatedOrder = "ORD-" + Math.floor(100000 + Math.random() * 900000);
-    setOrderCheck({ isOpen: true, step: "checking", orderId: generatedOrder });
+  const handleProofUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setTransferProof(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
+  const copyPaymentInfo = (text: string, id: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const submitOrder = () => {
+    if (!selectedPkg || !isLoggedIn || !userData || !transferProof) return;
+    
+    setIsVerifying(true);
+    
+    const baseUnitPrice = selectedPkg.discountedPrice !== undefined ? selectedPkg.discountedPrice : (typeof selectedPkg.price === 'number' ? selectedPkg.price : (parseInt(selectedPkg.price.replace(/\D/g, ""), 10) || 0));
+    const totalBasePrice = baseUnitPrice * quantity;
+    const finalPrice = discount > 0 ? Math.round(totalBasePrice * (1 - discount)) : totalBasePrice;
+
+    const orderId = addOrder({
+      userId: userData.name,
+      userName: userData.name,
+      userContact: userData.contact,
+      gameId: game.name,
+      gameName: game.name,
+      packageName: selectedPkg.name,
+      packagePrice: baseUnitPrice,
+      quantity: quantity,
+      totalPrice: finalPrice,
+      fields: formData,
+      paymentMethod: paymentMethod === "other" ? `${otherMethod} (${otherCountry})` : (settings.paymentAccounts.find(a => a.id === paymentMethod)?.name || paymentMethod),
+      senderInfo: senderValue,
+      screenshot: transferProof
+    });
+
+    // Verification animation delay
     setTimeout(() => {
-      setOrderCheck(prev => ({ ...prev, step: "success" }));
+      setIsVerifying(false);
+      setCheckoutStep(4);
+      setOrderCheck(prev => ({ ...prev, orderId }));
+    }, 3000);
+  };
+
+  const submitGemOrder = () => {
+    if (!selectedPkg || !isLoggedIn || !userData) return;
+    
+    const baseUnitPrice = selectedPkg.discountedPrice !== undefined ? selectedPkg.discountedPrice : (typeof selectedPkg.price === 'number' ? selectedPkg.price : (parseInt(selectedPkg.price.replace(/\D/g, ""), 10) || 0));
+    const totalBasePrice = baseUnitPrice * quantity;
+    // Calculation: 50 Gems = 45 EGP -> 1 Gem = 0.9 EGP
+    // Price in Gems = Price in EGP / 0.9
+    const finalPriceInGems = Math.ceil(totalBasePrice / 0.9); 
+    
+    if (spendGems(finalPriceInGems, `Purchase ${selectedPkg.name} for ${game.name}`)) {
+      setIsVerifying(true);
+      const orderId = addOrder({
+        userId: userData.id || userData.name,
+        userName: userData.name,
+        userContact: userData.contact,
+        gameId: game.name,
+        gameName: game.name,
+        packageName: selectedPkg.name,
+        packagePrice: baseUnitPrice,
+        quantity: quantity,
+        totalPrice: finalPriceInGems,
+        fields: formData,
+        paymentMethod: "Gems Wallet",
+        senderInfo: "N/A",
+        screenshot: "SYSTEM_GEM_PAYMENT"
+      });
+
+      // Show processing state for a moment then success
       setTimeout(() => {
-        const fieldsText = fieldConfig.fields
-          .map((f) => `${f.label}: ${formData[f.key] || "-"}`)
-          .join("\n");
-        const paymentLabel = 
-          paymentMethod === "vodafone" ? "Vodafone Cash" : 
-          paymentMethod === "instapay" ? "InstaPay" : 
-          paymentMethod === "other" ? `${otherMethod} - ${otherCountry}` : paymentMethod;
-        
-        let finalPriceLabel = "";
-        const unitPriceNum = parseInt(selectedPkg.price.replace(/\D/g, ""), 10) || 0;
-        const totalBasePrice = unitPriceNum * quantity;
-        
-        if (discount > 0) {
-          const discountedPrice = Math.round(totalBasePrice * (1 - discount));
-          finalPriceLabel = `${discountedPrice} ج.م (شامل خصم ${discount * 100}% على إجمالي ${totalBasePrice})`;
-        } else {
-          finalPriceLabel = `${totalBasePrice} ج.م`;
-        }
-        
-        const msg = encodeURIComponent(
-          `مرحبا، أريد شحن طلب جديد #${generatedOrder}\nاللعبة: ${game.name} - ${selectedPkg.name}\nالكمية: ${quantity}\n\nاسم المستخدم: ${username}\n${fieldsText}${playerName ? `\nالاسم: ${playerName}` : ""}\n\nكود الخصم: ${promoCode || "لا يوجد"}\nالسعر الإجمالي: ${finalPriceLabel}\n\nطريقة الدفع: ${paymentLabel}\n\nشكراً لك.`
-        );
-        window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${msg}`, "_blank");
-        setOrderCheck(prev => ({ ...prev, isOpen: false }));
+        setIsVerifying(false);
+        setCheckoutStep(4);
+        setOrderCheck(prev => ({ ...prev, orderId }));
       }, 1500);
-    }, 2000);
+    }
   };
 
   const scrollCheckout = (offset: number) => {
@@ -394,7 +273,7 @@ export default function GameDetailPage() {
   };
 
   const isFormValid = 
-    username.trim().length > 0 && 
+    isLoggedIn && 
     agreedToTerms && 
     fieldConfig.fields.filter((f) => f.required).every((f) => formData[f.key]?.trim());
 
@@ -408,6 +287,15 @@ export default function GameDetailPage() {
             <Link to="/games" className="flex items-center gap-2 text-sm font-bold uppercase hover:text-[var(--c-orange)] transition-colors">
               <ArrowLeft className="w-5 h-5" /> {t("Back", "رجوع")}
             </Link>
+            {isLoggedIn && (
+              <Link 
+                to="/buy-gems" 
+                className="md:hidden flex flex-row items-center gap-1 border-2 px-1.5 py-1 transition-all text-xs font-black cursor-pointer bg-[#b084ff] text-black border-black shadow-[2px_2px_0px_#000]"
+              >
+                 <span>{balance}</span>
+                 <GemIcon size={14} />
+              </Link>
+            )}
             <div className="hidden md:flex items-center gap-2" dir="ltr">
               <Gamepad2 className="w-6 h-6 text-[var(--c-lime)]" />
               <span className="text-2xl font-black uppercase">AL LORD STORE</span>
@@ -418,6 +306,15 @@ export default function GameDetailPage() {
               <Languages className="w-4 h-4" />
               {lang === "en" ? "عربي" : "EN"}
             </button>
+            {isLoggedIn && (
+              <Link 
+                to="/buy-gems" 
+                className="hidden md:flex flex-row items-center gap-2 border-2 px-2.5 py-1 transition-all text-sm font-black hover:-translate-y-0.5 cursor-pointer bg-[#b084ff] text-black border-black shadow-[2px_2px_0px_#000] hover:shadow-[4px_4px_0px_#000]"
+              >
+                 <span>{balance.toLocaleString()}</span>
+                 <GemIcon size={16} />
+              </Link>
+            )}
           </div>
         </div>
 
@@ -427,427 +324,485 @@ export default function GameDetailPage() {
           <div className="absolute inset-0 bg-black/50" />
           <div className="relative z-10 h-full flex flex-col justify-end p-8 md:p-12">
             <span className="text-xs font-bold uppercase tracking-widest text-[var(--c-lime)] mb-2">{game.cat}</span>
-            <h1 className="text-5xl md:text-7xl font-black uppercase text-white">{game.name}</h1>
-            <p className="text-lg text-white/80 mt-2 max-w-xl">{t(game.desc, (game as any).descAr || game.desc)}</p>
+            <div className="flex items-center gap-4 flex-wrap">
+              <h1 className="text-5xl md:text-7xl font-black uppercase text-white">{game.name}</h1>
+              {game.badge && game.badge.text && (
+                <div className={`${game.badge.color || 'bg-red-500'} text-white px-4 py-2 border-4 border-white shadow-[4px_4px_0px_#000] rotate-3 flex items-center gap-2 animate-bounce`}>
+                  {game.badge.icon === 'Flame' && <Flame className="w-5 h-5" />}
+                  {game.badge.icon === 'Star' && <Star className="w-5 h-5 fill-current" />}
+                  {game.badge.icon === 'Trophy' && <Trophy className="w-5 h-5" />}
+                  {game.badge.icon === 'Sparkles' && <Sparkles className="w-5 h-5" />}
+                  <span className="font-black uppercase text-sm md:text-base">{game.badge.text}</span>
+                </div>
+              )}
+            </div>
+            <p className="text-lg text-white/80 mt-2 max-w-xl">{t(game.desc, game.descAr || game.desc)}</p>
           </div>
         </div>
 
         {/* Packages */}
         <div className="max-w-7xl mx-auto px-6 py-12">
-          <h2 className="text-4xl md:text-6xl font-black uppercase mb-2">
-            <span className="font-marker text-[var(--c-orange)]">{t("PACKAGES", "الحزم")}</span> {t("AVAILABLE", "المتاحة")}
-          </h2>
-          <p className="text-sm font-bold uppercase tracking-widest opacity-50 mb-10">{t("CHOOSE THE RIGHT PACKAGE AND TOP UP NOW", "اختر الحزمة المناسبة واشحن الآن")}</p>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {packages.map((pkg, i) => (
-              <div key={i} className="group relative">
-                {/* Shadow */}
-                <div className={`absolute inset-0 ${pkg.popular ? "bg-[var(--c-orange)]" : game.color} translate-x-3 translate-y-3 border-4 border-[var(--c-ink)]`} />
-
-                {/* Card */}
-                <div
-                  className={`relative ${pkg.popular ? "bg-[var(--c-orange)]" : game.color} border-4 border-[var(--c-ink)] overflow-hidden group-hover:translate-x-1 group-hover:translate-y-1 transition-transform duration-300`}
-                >
-                  {/* Popular badge */}
-                  {pkg.popular && (
-                    <div className="absolute top-0 right-0 bg-[var(--c-ink)] text-[var(--c-bg)] px-3 py-1 text-xs font-black uppercase flex items-center gap-1 z-10">
-                      <Star className="w-3 h-3" /> {t("POPULAR", "الأكثر طلباً")}
-                    </div>
-                  )}
-
-                  {/* Image placeholder */}
-                  <div className="h-36 bg-cover bg-center relative" style={{ backgroundImage: `url(${pkg.image || PKG_IMAGES[i % PKG_IMAGES.length]})` }}>
-                    <div className="absolute inset-0 bg-black/40" />
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-3xl font-black text-white uppercase">{pkg.name}</span>
-                    </div>
-                  </div>
-
-                  {/* Content */}
-                  <div className="p-6">
-                    <h3 className="text-2xl font-black uppercase mb-1">{pkg.name}</h3>
-                    <p className="text-3xl font-black mb-4">{pkg.price}</p>
-
-                    {/* Features */}
-                    <div className="flex flex-col gap-2 mb-5 text-sm font-bold">
-                      <div className="flex items-center gap-2">
-                        <Zap className="w-4 h-4" /> {t("Instant Delivery", "تسليم فوري")}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <ShieldCheck className="w-4 h-4" /> {t("100% Safe", "آمن 100%")}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Headphones className="w-4 h-4" /> {t("24/7 Support", "دعم 24/7")}
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() => openModal(pkg)}
-                      className="w-full bg-[var(--c-ink)] text-[var(--c-bg)] px-4 py-3 text-sm font-black uppercase hover:opacity-90 transition-opacity"
-                    >
-                      {t("Top Up Now 🎮", "اشحن الآن 🎮")}
-                    </button>
-                  </div>
+          <div className="flex flex-col md:flex-row md:items-end gap-6 mb-10">
+            <div className="flex-1">
+              <h2 className="text-4xl md:text-6xl font-black uppercase mb-2">
+                <span className="font-marker text-[var(--c-orange)]">{t("PACKAGES", "الحزم")}</span> {t("AVAILABLE", "المتاحة")}
+              </h2>
+              <p className="text-sm font-bold uppercase tracking-widest opacity-50">{t("CHOOSE THE RIGHT PACKAGE AND TOP UP NOW", "اختر الحزمة المناسبة واشحن الآن")}</p>
+            </div>
+            
+            {game.tutorialVideoUrl && (
+              <button 
+                onClick={() => setIsTutorialOpen(true)}
+                className="flex items-center gap-3 bg-white border-4 border-black px-6 py-3 shadow-[6px_6px_0px_var(--c-lime)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all group shrink-0"
+              >
+                <div className="w-8 h-8 rounded-full bg-[var(--c-lime)] flex items-center justify-center border-2 border-black group-hover:animate-bounce">
+                  <HelpCircle className="w-5 h-5" />
                 </div>
-              </div>
-            ))}
+                <div className="text-left">
+                  <p className="text-[10px] font-black uppercase leading-none opacity-50">{t("Need Help?", "تحتاج مساعدة؟")}</p>
+                  <p className="text-xs font-black uppercase leading-none mt-1">{t("Watch Tutorial", "شاهد شرح الشحن")}</p>
+                </div>
+              </button>
+            )}
           </div>
+
+          {/* Official Statements / Announcements */}
+          {game.statements && game.statements.length > 0 && game.statements.some(s => s.trim()) && (
+            <div className="mb-10 space-y-3">
+              {game.statements.filter(s => s.trim()).map((statement, idx) => (
+                <div key={idx} className="bg-[var(--c-ink)] text-white border-4 border-black p-4 shadow-[6px_6px_0px_var(--c-lime)] flex items-start gap-4 animate-in slide-in-from-left duration-500" style={{ animationDelay: `${idx * 150}ms` }}>
+                  <div className="w-8 h-8 rounded-full bg-[var(--c-lime)] flex items-center justify-center shrink-0 border-2 border-white">
+                    <Info className="w-5 h-5 text-black" />
+                  </div>
+                  <p className="font-bold text-sm md:text-base py-1">{statement}</p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {packages.length === 0 ? (
+            <div className="bg-white border-8 border-black p-12 text-center shadow-[15px_15px_0px_var(--c-orange)] rotate-1">
+              <Info className="w-16 h-16 text-[var(--c-orange)] mx-auto mb-6 animate-pulse" />
+              <h3 className="text-3xl font-black uppercase mb-4">
+                {game.noPackagesMessage || (lang === 'ar' ? 'عذراً، لا توجد حزم متاحة حالياً لهذه اللعبة. تواصل معنا لمزيد من التفاصيل.' : 'Sorry, no packages available for this game right now. Contact us for details.')}
+              </h3>
+              <BrutalButton onClick={() => window.open(`https://wa.me/${settings.whatsappNumber}?text=${encodeURIComponent(t("Hello, I want to inquire about packages for " + game.name, "مرحباً، أود الاستفسار عن حزم لعبة " + game.name))}`, "_blank")}>
+                {t("Contact Support 💬", "تواصل مع الدعم 💬")}
+              </BrutalButton>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+              {packages.map((pkg: any, i: number) => {
+                const totalDiscount = (game.discount || 0) + (pkg.discount || 0);
+                const unitPrice = typeof pkg.price === 'number' ? pkg.price : (parseInt(pkg.price.replace(/\D/g, ""), 10) || 0);
+                const discountedPrice = Math.round(unitPrice * (1 - totalDiscount / 100));
+
+                return (
+                  <div key={pkg.id || i} className="group relative">
+                    <div className={`absolute inset-0 ${pkg.popular ? "bg-[var(--c-orange)]" : game.color} translate-x-3 translate-y-3 border-4 border-[var(--c-ink)]`} />
+                    <div className={`relative ${pkg.popular ? "bg-[var(--c-orange)]" : game.color} border-4 border-[var(--c-ink)] group-hover:translate-x-1 group-hover:translate-y-1 transition-transform duration-300`}>
+                      {pkg.popular && (
+                        <div className="absolute top-0 right-0 bg-[var(--c-ink)] text-[var(--c-bg)] px-3 py-1 text-xs font-black uppercase flex items-center gap-1 z-10">
+                          <Star className="w-3 h-3" /> {t("POPULAR", "الأكثر طلباً")}
+                        </div>
+                      )}
+                      
+                      {totalDiscount > 0 && (
+                        <div className="absolute top-0 left-0 z-20 pointer-events-none -translate-x-2 -translate-y-2">
+                          <div className="bg-red-600 text-white flex flex-col items-center justify-center px-3 py-1.5 border-4 border-black shadow-[3px_3px_0px_rgba(0,0,0,0.3)] relative min-w-[70px]">
+                            <span className="text-[9px] font-black tracking-tighter leading-none mb-0.5 opacity-80">{t("SALE", "خصم")}</span>
+                            <span className="text-xl font-black leading-none">-{totalDiscount}%</span>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="h-36 bg-cover bg-center relative" style={{ backgroundImage: `url(${pkg.image || PKG_IMAGES[i % PKG_IMAGES.length]})` }}>
+                        <div className="absolute inset-0 bg-black/40" />
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <span className="text-3xl font-black text-white uppercase">{lang === 'ar' ? (pkg.nameAr || pkg.name) : pkg.name}</span>
+                        </div>
+                      </div>
+                      <div className="p-6">
+                        <h3 className="text-2xl font-black uppercase mb-1">{lang === 'ar' ? (pkg.nameAr || pkg.name) : pkg.name}</h3>
+                        <div className="mb-4">
+                          {totalDiscount > 0 ? (
+                            <div className="flex items-center gap-3">
+                              <span className="text-sm font-bold line-through opacity-50">{formatPrice(unitPrice)}</span>
+                              <span className="text-3xl font-black">{formatPrice(discountedPrice)}</span>
+                            </div>
+                          ) : (
+                            <p className="text-3xl font-black">{formatPrice(unitPrice)}</p>
+                          )}
+                        </div>
+                        <div className="flex flex-col gap-2 mb-5 text-sm font-bold">
+                          <div className="flex items-center gap-2"> <Zap className="w-4 h-4" /> {t("Instant Delivery", "تسليم فوري")} </div>
+                          <div className="flex items-center gap-2"> <ShieldCheck className="w-4 h-4" /> {t("100% Safe", "آمن 100%")} </div>
+                          <div className="flex items-center gap-2"> <Headphones className="w-4 h-4" /> {t("24/7 Support", "دعم 24/7")} </div>
+                        </div>
+                        <button onClick={() => openModal({...pkg, unitPrice, discountedPrice, totalDiscount})} className="w-full bg-[var(--c-ink)] text-[var(--c-bg)] px-4 py-3 text-sm font-black uppercase hover:opacity-90 transition-opacity">
+                          {t("Top Up Now 🎮", "اشحن الآن 🎮")}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Order Modal */}
         {modalOpen && selectedPkg && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            {/* Backdrop */}
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setModalOpen(false)} />
-
-            {/* Modal Container */}
             <div className="relative w-full max-w-md my-auto">
-              {/* Shadow */}
               <div className="absolute inset-0 bg-[var(--c-lime)] translate-x-3 translate-y-3 border-4 border-[var(--c-ink)]" />
-
-              <div className="relative border-4 border-[var(--c-ink)] p-4 pr-14 flex flex-col max-h-[90vh]" style={{ backgroundColor: "var(--c-bg)" }}>
-                {/* Close */}
-                <button
-                  onClick={() => setModalOpen(false)}
-                  className="absolute top-4 right-4 w-8 h-8 border-2 border-[var(--c-ink)] flex items-center justify-center hover:bg-[var(--c-ink)] hover:text-[var(--c-bg)] transition-colors z-30"
-                >
-                  <X className="w-4 h-4" />
+              <div className="relative border-4 border-[var(--c-ink)] p-3 pr-12 md:p-4 md:pr-16 flex flex-col max-h-[90vh]" style={{ backgroundColor: "var(--c-bg)" }}>
+                <button onClick={() => setModalOpen(false)} className="absolute top-3 right-3 md:top-4 md:right-4 w-8 h-8 border-2 border-[var(--c-ink)] flex items-center justify-center hover:bg-[var(--c-ink)] hover:text-[var(--c-bg)] transition-colors z-30 bg-white shadow-[2px_2px_0px_#000]">
+                  <X className="w-5 h-5" />
                 </button>
-
-                {/* Custom Scroll Arrows */}
-                <div className="absolute top-16 bottom-4 right-2 w-10 flex flex-col gap-2 z-20">
-                  <button onClick={() => scrollCheckout(-100)} className="w-10 h-12 flex items-center justify-center bg-[var(--c-orange)] border-4 border-[var(--c-ink)] text-[var(--c-ink)] hover:bg-[var(--c-lime)] transition-colors shadow-[2px_2px_0px_#000]">
-                    <ChevronUp className="w-6 h-6" />
-                  </button>
+                <div className="absolute top-16 bottom-4 right-2 md:right-3 w-8 md:w-10 flex flex-col gap-2 z-20">
+                  <button onClick={() => scrollCheckout(-100)} className="w-8 h-10 md:w-10 md:h-12 flex items-center justify-center bg-[var(--c-orange)] border-4 border-[var(--c-ink)] text-[var(--c-ink)] hover:bg-[var(--c-lime)] transition-colors shadow-[2px_2px_0px_#000]"> <ChevronUp className="w-5 h-5 md:w-6 md:h-6" /> </button>
                   <div className="flex-1 border-x-4 border-[var(--c-ink)]/20 mx-auto w-1 my-1"></div>
-                  <button onClick={() => scrollCheckout(100)} className="w-10 h-12 flex items-center justify-center bg-[var(--c-orange)] border-4 border-[var(--c-ink)] text-[var(--c-ink)] hover:bg-[var(--c-lime)] transition-colors shadow-[2px_2px_0px_#000]">
-                    <ChevronDown className="w-6 h-6" />
-                  </button>
+                  <button onClick={() => scrollCheckout(100)} className="w-8 h-10 md:w-10 md:h-12 flex items-center justify-center bg-[var(--c-orange)] border-4 border-[var(--c-ink)] text-[var(--c-ink)] hover:bg-[var(--c-lime)] transition-colors shadow-[2px_2px_0px_#000]"> <ChevronDown className="w-5 h-5 md:w-6 md:h-6" /> </button>
                 </div>
 
-                {/* Sticky Package Header */}
-                <div className="shrink-0 mb-4 pr-2 z-10">
-                  {/* Package info */}
+                <div className="shrink-0 mb-4 z-10 mr-2 md:mr-0">
                   <div className="border-4 border-[var(--c-ink)] overflow-hidden shadow-[4px_4px_0px_var(--c-ink)]">
-                    <div className={`${game.color} p-4`}>
-                      <p className="text-xs font-bold uppercase opacity-70 mb-1">{game.name}</p>
-                      <p className="text-2xl font-black leading-none">{selectedPkg.name}</p>
-                      <p className="text-xl font-bold mt-2">
+                    <div className={`${game.color} p-3 md:p-4`}>
+                      <p className="text-[10px] md:text-xs font-bold uppercase opacity-70 mb-1">{game.name}</p>
+                      <p className="text-xl md:text-2xl font-black leading-none truncate">{lang === 'ar' ? (selectedPkg.nameAr || selectedPkg.name) : selectedPkg.name}</p>
+                      <p className="text-lg md:text-xl font-bold mt-2 truncate">
                         {(() => {
-                           const unitPrice = parseInt(selectedPkg.price.replace(/\D/g, ""), 10) || 0;
+                           const unitPrice = selectedPkg.discountedPrice !== undefined ? selectedPkg.discountedPrice : (typeof selectedPkg.price === 'number' ? selectedPkg.price : (parseInt(selectedPkg.price.replace(/\D/g, ""), 10) || 0));
                            const totalBase = unitPrice * quantity;
                            if (discount > 0) {
                              return (
-                               <span className="flex items-center gap-2">
-                                 <span className="line-through opacity-70">{totalBase} ج.م</span>
-                                 <span className="text-[var(--c-ink)] bg-white px-2 py-1 text-sm font-black transform -rotate-2">
-                                   {Math.round(totalBase * (1 - discount))} ج.م
+                               <span className="flex items-center gap-1.5 md:gap-2">
+                                 <span className="line-through opacity-70">{formatPrice(totalBase)}</span>
+                                 <span className="text-[var(--c-ink)] bg-white px-1.5 py-0.5 md:px-2 md:py-1 text-xs md:text-sm font-black transform -rotate-2 whitespace-nowrap">
+                                   {formatPrice(Math.round(totalBase * (1 - discount)))}
                                  </span>
                                </span>
                              );
                            }
-                           return `${totalBase} ج.م`;
+                           return formatPrice(totalBase);
                         })()}
                       </p>
                     </div>
                   </div>
                 </div>
 
-                {/* Scrollable Content */}
-                <div 
-                  ref={checkoutScrollRef}
-                  className="flex-1 overflow-y-auto scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] pr-2 pb-8 text-[var(--c-ink)] relative"
-                >
-                  {/* Charging Info */}
-                  <div className="border-4 border-[var(--c-ink)] p-4 mb-6 bg-[var(--c-lime)]/10">
-                    <div 
-                      className="flex justify-between items-center cursor-pointer select-none"
-                      onClick={() => setShowInfo(!showInfo)}
-                    >
-                      <div className="flex items-center gap-2">
-                        <div className="flex items-center justify-center w-7 h-7 rounded-full bg-[var(--c-orange)] animate-bounce">
-                          <Info className="w-5 h-5 text-white" />
-                        </div>
-                        <span className="text-sm font-black uppercase">{t("Charging Info", "معلومات الشحن")}</span>
-                      </div>
-                      <div className="text-[var(--c-ink)]">
-                        {showInfo ? <Minus className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
-                      </div>
-                    </div>
-
-                    {showInfo && (
-                      <div className="mt-4 pt-4 border-t-4 border-[var(--c-ink)] transition-all duration-300">
-                        <ul className="space-y-2">
-                          {fieldConfig.chargingInfo.map((info, idx) => (
-                            <li key={idx} className="flex items-start gap-2 text-sm font-bold">
-                              <CheckCircle className="w-4 h-4 mt-0.5 shrink-0 text-[var(--c-orange)]" />
-                              {info}
-                            </li>
-                          ))}
-                        </ul>
-                        <div className="flex flex-wrap gap-4 mt-4 pt-3 border-t-4 border-[var(--c-ink)]">
-                          <div className="flex items-center gap-2 text-xs font-black">
-                            <CreditCard className="w-4 h-4" />
-                            {fieldConfig.chargingMethod}
+                <div ref={checkoutScrollRef} className="flex-1 overflow-y-auto pt-1 pb-8 text-[var(--c-ink)] relative mr-1 md:mr-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                  {checkoutStep === 1 && (
+                    <div className="animate-in fade-in slide-in-from-right duration-300">
+                      <div className="border-4 border-[var(--c-ink)] p-4 mb-6 bg-[var(--c-lime)]/10">
+                        <div className="flex justify-between items-center cursor-pointer select-none" onClick={() => setShowInfo(!showInfo)}>
+                          <div className="flex items-center gap-2">
+                            <div className="flex items-center justify-center w-7 h-7 rounded-full bg-[var(--c-orange)] animate-bounce"> <Info className="w-5 h-5 text-white" /> </div>
+                            <span className="text-sm font-black uppercase">{t("Charging Info", "معلومات الشحن")}</span>
                           </div>
-                          <div className="flex items-center gap-2 text-xs font-black">
-                            <Clock className="w-4 h-4" />
-                            {fieldConfig.deliveryTime}
+                          {showInfo ? <Minus className="w-5 h-5" /> : <Plus className="w-5 h-5" />}
+                        </div>
+                        {showInfo && (
+                          <div className="mt-4 pt-4 border-t-4 border-[var(--c-ink)]">
+                            <ul className="space-y-2">
+                              {fieldConfig.chargingInfo.map((info: string, idx: number) => (
+                                <li key={idx} className="flex items-start gap-2 text-sm font-bold"> <CheckCircle className="w-4 h-4 mt-0.5 shrink-0 text-[var(--c-orange)]" /> {info} </li>
+                              ))}
+                            </ul>
                           </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Quantity Selector */}
-                  <div className="mb-6 p-4 border-4 border-[var(--c-ink)] bg-white shadow-[4px_4px_0px_var(--c-ink)]">
-                    <label className="block text-sm font-black uppercase mb-3 text-[var(--c-purple)]">
-                      {t("Choose Quantity", "اختر الكمية")}
-                    </label>
-                    <div className="flex items-center gap-4">
-                      <button
-                        onClick={() => setQuantity(q => Math.max(1, q - 1))}
-                        disabled={quantity <= 1}
-                        className="w-12 h-12 flex items-center justify-center bg-[var(--c-orange)] border-4 border-[var(--c-ink)] text-[var(--c-ink)] font-black text-xl hover:bg-[var(--c-lime)] transition-colors shadow-[2px_2px_0px_var(--c-ink)] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-                      >
-                        <Minus className="w-6 h-6" />
-                      </button>
-                      <div className="flex-1 text-center border-x-4 border-[var(--c-ink)]/10">
-                        <span className="text-3xl font-black">{quantity}</span>
-                        <p className="text-[10px] font-bold opacity-50 uppercase mt-1">{t("Times", "مرات الشحن")}</p>
-                      </div>
-                      <button
-                        onClick={() => setQuantity(q => Math.min(MAX_QUANTITY, q + 1))}
-                        disabled={quantity >= MAX_QUANTITY}
-                        className="w-12 h-12 flex items-center justify-center bg-[var(--c-orange)] border-4 border-[var(--c-ink)] text-[var(--c-ink)] font-black text-xl hover:bg-[var(--c-lime)] transition-colors shadow-[2px_2px_0px_var(--c-ink)] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
-                      >
-                        <Plus className="w-6 h-6" />
-                      </button>
-                    </div>
-                    {quantity === MAX_QUANTITY && (
-                      <p className="text-[10px] font-black uppercase text-[var(--c-orange)] mt-2 text-center animate-pulse">
-                        {t("Maximum quantity reached!", "لقد وصلت للحد الأقصى (22)!")}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Payment Method Selection */}
-                  <div className="mb-6">
-                    <label className="block text-sm font-black uppercase mb-3 text-[var(--c-purple)]">
-                      {t("Payment Method", "طريقة الدفع")}
-                    </label>
-                    <div className="grid grid-cols-1 gap-2">
-                      {[
-                        { id: "vodafone", label: "Vodafone Cash", ar: "فودافون كاش", icon: <CreditCard className="w-4 h-4" /> },
-                        { id: "instapay", label: "InstaPay", ar: "انستاباي", icon: <Zap className="w-4 h-4" /> },
-                        { id: "other", label: "Other Method", ar: "طريقة أخرى", icon: <Send className="w-4 h-4" /> }
-                      ].map((pm) => (
-                        <button
-                          key={pm.id}
-                          type="button"
-                          onClick={() => {
-                            if (pm.id === "other") {
-                              setIsOtherModalOpen(true);
-                            } else {
-                              setPaymentMethod(pm.id);
-                            }
-                          }}
-                          className={`flex items-center justify-between p-3 border-4 transition-all ${
-                            paymentMethod === pm.id 
-                              ? "border-[var(--c-ink)] bg-[var(--c-lime)] translate-x-1 translate-y-1 shadow-none" 
-                              : "border-[var(--c-ink)] bg-white hover:bg-[var(--c-lime)]/10 shadow-[4px_4px_0px_var(--c-ink)]"
-                          }`}
-                        >
-                          <span className="flex items-center gap-3 font-black uppercase text-xs">
-                             {pm.id === "other" && paymentMethod === "other" && otherMethod ? (
-                               <span className="flex items-center gap-2">
-                                 <BrutalFlag code={otherCountryCode} /> <span className="text-[var(--c-purple)]">{otherMethod}</span>
-                               </span>
-                             ) : (
-                               <>{pm.icon} {lang === "ar" ? pm.ar : pm.label}</>
-                             )}
-                          </span>
-                          {paymentMethod === pm.id && <CheckCircle className="w-4 h-4 text-[var(--c-ink)]" />}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Promo Code System */}
-                  <div className="mb-6 p-4 border-4 border-[var(--c-ink)] bg-[var(--c-bg)] shadow-[4px_4px_0px_var(--c-ink)]">
-                    <label className="block text-sm font-black uppercase mb-3 text-[var(--c-purple)]">
-                      {t("Promo Code", "كود الخصم")}
-                    </label>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={promoCode}
-                        onChange={(e) => setPromoCode(e.target.value)}
-                        placeholder={t("E.g. LORD15", "مثال: LORD15")}
-                        className={`flex-1 border-4 border-[var(--c-ink)] px-3 py-2 text-sm font-bold bg-white focus:outline-none focus:border-[var(--c-orange)] transition-colors tracking-widest uppercase ${lang === "ar" ? "text-right" : "text-left"}`}
-                      />
-                      <button
-                        type="button"
-                        onClick={handleApplyPromo}
-                        className="bg-[var(--c-ink)] text-[var(--c-bg)] px-4 py-2 text-sm font-black uppercase hover:bg-[var(--c-orange)] transition-colors whitespace-nowrap border-4 border-[var(--c-ink)]"
-                      >
-                        {t("Apply", "تطبيق")}
-                      </button>
-                    </div>
-                    
-                    {/* Feedback Messages */}
-                    {promoError && (
-                      <div className="mt-4 p-3 border-4 border-red-500 bg-red-50 flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
-                        <div className="w-6 h-6 bg-red-500 flex items-center justify-center shrink-0">
-                          <X className="w-4 h-4 text-white" />
-                        </div>
-                        <p className="text-xs font-black uppercase text-red-600">{promoError}</p>
-                      </div>
-                    )}
-                    
-                    {discount > 0 && (
-                      <div className="mt-4 p-3 border-4 border-[var(--c-ink)] bg-[var(--c-lime)] shadow-[4px_4px_0px_var(--c-ink)] flex items-center gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
-                        <div className="w-6 h-6 bg-[var(--c-ink)] flex items-center justify-center shrink-0">
-                          <CheckCircle className="w-4 h-4 text-white" />
-                        </div>
-                        <p className="text-xs font-black uppercase text-[var(--c-ink)] tracking-tighter">
-                          {t("Discount Applied! 15% off", "تم تفعيل الخصم بنجاح! 15%")}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Login / User Info */}
-                  <div className="mb-8 p-5 border-4 border-[var(--c-ink)] bg-white shadow-[6px_6px_0px_var(--c-purple)]">
-                    <label className="block text-sm font-black uppercase mb-3 text-[var(--c-purple)]">
-                      {t("Account Information", "معلومات الحساب")}
-                    </label>
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-[10px] font-black uppercase mb-1 opacity-70">
-                          {t("Username", "اسم المستخدم")} *
-                        </label>
-                        <input
-                          type="text"
-                          value={username}
-                          onChange={(e) => setUsername(e.target.value)}
-                          placeholder={t("Enter store username", "أدخل اسم المستخدم بالمتجر")}
-                          className="w-full border-4 border-[var(--c-ink)] px-4 py-3 text-lg font-bold bg-transparent focus:outline-none focus:border-[var(--c-orange)] transition-colors"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Dynamic Form Fields */}
-                  <div className="space-y-4 mb-8">
-                    {fieldConfig.fields.map((field) => (
-                      <div key={field.key}>
-                        <label className="block text-sm font-black uppercase mb-2">
-                          {field.label} {field.required && "*"}
-                        </label>
-                        <input
-                          type="text"
-                          value={formData[field.key] || ""}
-                          onChange={(e) => setFormData((prev) => ({ ...prev, [field.key]: e.target.value }))}
-                          placeholder={field.placeholder}
-                          className="w-full border-4 border-[var(--c-ink)] px-4 py-3 text-lg font-bold bg-transparent focus:outline-none focus:border-[var(--c-orange)] transition-colors"
-                        />
-                      </div>
-                    ))}
-                    <div>
-                      <label className="block text-sm font-black uppercase mb-2">{t("Name (Optional)", "الاسم (اختياري)")}</label>
-                      <input
-                        type="text"
-                        value={playerName}
-                        onChange={(e) => setPlayerName(e.target.value)}
-                        placeholder={t("Enter your name", "أدخل اسمك")}
-                        className={`w-full border-4 border-[var(--c-ink)] px-4 py-3 text-lg font-bold bg-transparent focus:outline-none focus:border-[var(--c-orange)] transition-colors ${lang === "ar" ? "text-right" : "text-left"}`}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Terms & Rights Agreement */}
-                  <div className="mb-8">
-                    <button 
-                      onClick={() => setAgreedToTerms(!agreedToTerms)}
-                      className={`w-full p-4 border-4 transition-all flex items-start gap-4 text-left ${
-                        agreedToTerms 
-                          ? "bg-[var(--c-lime)] border-[var(--c-ink)] shadow-none translate-x-1 translate-y-1" 
-                          : "bg-white border-[var(--c-ink)] shadow-[4px_4px_0px_var(--c-ink)] hover:bg-[var(--c-lime)]/10"
-                      }`}
-                    >
-                      <div className={`mt-1 w-6 h-6 shrink-0 border-4 border-[var(--c-ink)] flex items-center justify-center ${agreedToTerms ? 'bg-[var(--c-ink)]' : 'bg-white'}`}>
-                        {agreedToTerms && <CheckCircle className="w-4 h-4 text-white" />}
-                      </div>
-                      <div className="text-xs font-bold leading-tight">
-                        {lang === "ar" ? (
-                          <>
-                            أوافق على <span className="underline font-black">شروط الخدمة</span>، <span className="underline font-black">سياسة الخصوصية</span>، وحقوق المستخدم والموقع.
-                          </>
-                        ) : (
-                          <>
-                            I agree to the <span className="underline font-black">Terms of Service</span>, <span className="underline font-black">Privacy Policy</span>, and User/Site Rights.
-                          </>
                         )}
                       </div>
-                    </button>
-                  </div>
 
-                  <button
-                    onClick={sendWhatsApp}
-                    disabled={!isFormValid}
-                    className={`w-full bg-[var(--c-ink)] text-[var(--c-bg)] px-6 py-5 text-xl font-black uppercase flex items-center justify-center gap-2 transition-all shadow-[6px_6px_0px_var(--c-orange)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none mb-8 ${
-                      !isFormValid ? "opacity-40 cursor-not-allowed" : "hover:opacity-90 transition-opacity"
-                    }`}
-                  >
-                    <Send className="w-6 h-6" /> {t("Send Order", "إرسال الطلب")}
-                  </button>
+                      <div className="mb-6 p-4 border-4 border-[var(--c-ink)] bg-white shadow-[4px_4px_0px_var(--c-ink)]">
+                        <label className="block text-sm font-black uppercase mb-3 text-[var(--c-purple)]">{t("Choose Quantity", "اختر الكمية")}</label>
+                        <div className="flex items-center gap-4">
+                          <button onClick={() => setQuantity(q => Math.max(1, q - 1))} disabled={quantity <= 1} className="w-12 h-12 flex items-center justify-center bg-[var(--c-orange)] border-4 border-[var(--c-ink)] text-[var(--c-ink)] font-black text-xl hover:bg-[var(--c-lime)] transition-colors disabled:opacity-30"> <Minus className="w-6 h-6" /> </button>
+                          <div className="flex-1 text-center border-x-4 border-[var(--c-ink)]/10"> <span className="text-3xl font-black">{quantity}</span> </div>
+                          <button onClick={() => setQuantity(q => Math.min(MAX_QUANTITY, q + 1))} disabled={quantity >= MAX_QUANTITY} className="w-12 h-12 flex items-center justify-center bg-[var(--c-orange)] border-4 border-[var(--c-ink)] text-[var(--c-ink)] font-black text-xl hover:bg-[var(--c-lime)] transition-colors disabled:opacity-30"> <Plus className="w-6 h-6" /> </button>
+                        </div>
+                      </div>
+
+                      <div className="mb-6">
+                        <label className="block text-sm font-black uppercase mb-3 text-[var(--c-purple)]">{t("Payment Method", "طريقة الدفع")}</label>
+                        <div className="grid grid-cols-1 gap-2">
+                          {[ 
+                            { id: "gems", label: "Pay with Gems", ar: "ادفع بالجواهر", icon: <GemIcon size={16} /> },
+                            ...settings.paymentAccounts
+                              .filter(acc => acc.countryCode === "eg")
+                              .map(acc => ({ 
+                                id: acc.id, 
+                                label: acc.name, 
+                                ar: acc.name, 
+                                icon: <CreditCard className="w-4 h-4" /> 
+                              })),
+                            { id: "other", label: "Other Method", ar: "طريقة أخرى", icon: <Send className="w-4 h-4" /> } 
+                          ].map((pm) => (
+                            <button key={pm.id} type="button" onClick={() => pm.id === "other" ? setIsOtherModalOpen(true) : setPaymentMethod(pm.id)} className={`flex items-center justify-between p-3 border-4 transition-all ${paymentMethod === pm.id ? "border-[var(--c-ink)] bg-[var(--c-lime)] translate-x-1 translate-y-1" : "border-[var(--c-ink)] bg-white hover:bg-[var(--c-lime)]/10 shadow-[4px_4px_0px_var(--c-ink)]"}`}>
+                              <span className="flex items-center gap-3 font-black uppercase text-xs">
+                                 {pm.id === "other" && paymentMethod === "other" && otherMethod ? ( <span className="flex items-center gap-2"> <span className="text-[var(--c-purple)]">{otherMethod}</span> </span> ) : ( <>{pm.icon} {lang === "ar" ? pm.ar : pm.label}</> )}
+                              </span>
+                              {paymentMethod === pm.id && <CheckCircle className="w-4 h-4 text-[var(--c-ink)]" />}
+                            </button>
+                          ))}
+                        </div>
+                        <div className="mt-3 bg-[var(--c-orange)]/10 border-2 border-[var(--c-ink)] p-3 flex items-start gap-2 shadow-[2px_2px_0px_var(--c-ink)]">
+                          <Info className="w-4 h-4 text-[var(--c-orange)] shrink-0 mt-0.5" />
+                          <p className="text-[10px] font-black uppercase leading-tight text-[var(--c-ink)]">
+                            {t("Vodafone Cash is the current default. Change it from 'Other Method' if you want a different wallet or country.", "فودافون كاش هي المحفظة الحالية، قم بتغييرها من زر 'طريقة أخرى' إن كنت تريد محفظة أو دولة مختلفة.")}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-4 mb-8">
+                        {fieldConfig.fields.map((field: any, idx: number) => {
+                          const suggestions = gameSavedAccounts.filter(acc => acc.accountId.includes(formData[field.key] || ""));
+                          return (
+                          <div key={field.key} className="relative">
+                            <div className="flex items-center justify-between mb-2">
+                              <label className="block text-sm font-black uppercase"> {field.label} {field.required && "*"} </label>
+                              {field.key === 'playerId' && game.tutorialVideoUrl && (
+                                <button 
+                                  onClick={() => setIsTutorialOpen(true)}
+                                  className="flex items-center gap-1.5 text-[10px] font-black uppercase text-[var(--c-orange)] hover:underline"
+                                >
+                                  <HelpCircle className="w-3.5 h-3.5" />
+                                  {t("How to get ID?", "كيف تجيب الـ ID؟")}
+                                </button>
+                              )}
+                            </div>
+                            <input type="text" value={formData[field.key] || ""} onChange={(e) => setFormData((prev) => ({ ...prev, [field.key]: e.target.value }))} onFocus={() => { if(idx === 0) setIsSuggestionsOpen(true); }} onBlur={() => { setTimeout(() => setIsSuggestionsOpen(false), 200); }} placeholder={field.placeholder} className="w-full border-4 border-[var(--c-ink)] px-4 py-3 text-lg font-bold bg-transparent outline-none focus:border-[var(--c-orange)]" />
+                            {idx === 0 && isSuggestionsOpen && suggestions.length > 0 && (
+                              <div className="absolute top-full left-0 right-0 z-20 border-4 border-[var(--c-ink)] bg-[var(--c-bg)] shadow-[4px_4px_0px_var(--c-ink)] mt-1">
+                                <div className="bg-[var(--c-lime)] border-b-4 border-[var(--c-ink)] px-3 py-1.5 text-[10px] font-black uppercase text-[var(--c-ink)]">{t("Saved Accounts", "حسابات محفوظة")}</div>
+                                {suggestions.map((acc, i) => (
+                                  <button key={i} type="button" onMouseDown={(e) => { e.preventDefault(); setFormData((prev) => ({ ...prev, [field.key]: acc.accountId })); setIsSuggestionsOpen(false); }} className="w-full text-left p-3 text-sm font-black uppercase hover:bg-[var(--c-orange)] hover:text-white border-b-2 border-[var(--c-ink)]/10 last:border-0">{acc.accountId}</button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )})}
+                        <div>
+                          <label className="block text-sm font-black uppercase mb-2">{t("Name (Optional)", "الاسم (اختياري)")}</label>
+                          <input type="text" value={playerName} onChange={(e) => setPlayerName(e.target.value)} placeholder={t("Enter your name", "أدخل اسمك")} className="w-full border-4 border-[var(--c-ink)] px-4 py-3 text-lg font-bold bg-transparent outline-none focus:border-[var(--c-orange)]" />
+                        </div>
+
+                        {/* Promo Code Section */}
+                        <div className="pt-4 border-t-4 border-[var(--c-ink)]/10">
+                          <label className="block text-sm font-black uppercase mb-2 text-[var(--c-purple)]">{t("Promo Code", "كود الخصم")}</label>
+                          <div className="flex flex-col sm:flex-row gap-2">
+                             <input 
+                              type="text" 
+                              value={promoCode} 
+                              onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                              placeholder={t("HAVE A CODE?", "لديك كود خصم؟")}
+                              className="flex-1 border-4 border-[var(--c-ink)] px-3 py-2 text-sm font-bold bg-white outline-none focus:border-[var(--c-orange)] uppercase min-w-0" 
+                             />
+                             <button 
+                              type="button"
+                              onClick={handleApplyPromo}
+                              className="bg-[var(--c-ink)] text-white px-6 py-2.5 font-black uppercase text-xs hover:bg-[var(--c-orange)] transition-colors shadow-[2px_2px_0px_#000] whitespace-nowrap"
+                             >
+                               {t("Apply", "تطبيق")}
+                             </button>
+                          </div>
+                          {promoError && <p className="text-[10px] font-bold text-red-600 mt-1 uppercase">{promoError}</p>}
+                          {discount > 0 && <p className="text-[10px] font-black text-green-600 mt-1 uppercase">✓ {t("Discount Applied!", "تم تطبيق الخصم!")} ({(discount * 100).toFixed(0)}%)</p>}
+                        </div>
+                      </div>
+
+                      <div className="mb-8">
+                        <button onClick={() => setAgreedToTerms(!agreedToTerms)} className={`w-full p-4 border-4 transition-all flex items-start gap-4 text-left ${agreedToTerms ? "bg-[var(--c-lime)] translate-x-1 translate-y-1 shadow-none" : "bg-white shadow-[4px_4px_0px_var(--c-ink)] hover:bg-[var(--c-lime)]/10"}`}>
+                          <div className={`mt-1 w-6 h-6 shrink-0 border-4 border-[var(--c-ink)] flex items-center justify-center ${agreedToTerms ? 'bg-[var(--c-ink)]' : 'bg-white'}`}> {agreedToTerms && <CheckCircle className="w-4 h-4 text-white" />} </div>
+                          <div className="text-xs font-bold leading-tight"> {lang === "ar" ? (<>أوافق على <span className="underline font-black">شروط الخدمة</span>، <span className="underline font-black">سياسة الخصوصية</span>، وحقوق المستخدم والموقع.</>) : (<>I agree to the <span className="underline font-black">Terms of Service</span>, <span className="underline font-black">Privacy Policy</span>, and User/Site Rights.</>)} </div>
+                        </button>
+                      </div>
+
+                      {!isLoggedIn ? (
+                        <button onClick={openLogin} className="w-full bg-[var(--c-purple)] text-white px-6 py-5 text-xl font-black uppercase flex items-center justify-center gap-2 transition-all shadow-[6px_6px_0px_var(--c-ink)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none mb-8">
+                          <LogIn className="w-6 h-6" /> {t("Login to Order", "سجل دخولك لطلب الشحن")}
+                        </button>
+                      ) : (
+                        <div>
+                          {!isFormValid && (
+                            <p className="text-[10px] font-black uppercase text-red-600 mb-2 text-center animate-pulse">
+                               {t("Please fill all required fields and agree to terms", "يرجى ملء كافة الحقول الإجبارية والموافقة على الشروط")}
+                            </p>
+                          )}
+                          {paymentMethod === "gems" ? (() => {
+                             const baseUnitPrice = selectedPkg.discountedPrice !== undefined ? selectedPkg.discountedPrice : (typeof selectedPkg.price === 'number' ? selectedPkg.price : (parseInt(selectedPkg.price.replace(/\D/g, ""), 10) || 0));
+                             const totalBasePrice = baseUnitPrice * quantity;
+                             // 50 Gems = 45 EGP logic
+                             const gemsPrice = Math.ceil(totalBasePrice / 0.9);
+                             const hasEnough = balance >= gemsPrice;
+                             return (
+                               <div className="space-y-2">
+                                 <button 
+                                   onClick={submitGemOrder} 
+                                   disabled={!isFormValid || !hasEnough} 
+                                   className={`w-full bg-[#101010] text-white px-6 py-5 text-xl font-black uppercase flex items-center justify-center gap-2 transition-all shadow-[6px_6px_0px_#b084ff] hover:translate-x-1 hover:translate-y-1 hover:shadow-none ${(!isFormValid || !hasEnough) ? "opacity-30 cursor-not-allowed grayscale" : "hover:bg-[#b084ff]"}`}
+                                 >
+                                   <GemIcon size={24} /> {t("Pay Instantly", "ادفع فوراً")} ({gemsPrice.toLocaleString()})
+                                 </button>
+                                 {!hasEnough && isFormValid && (
+                                   <p className="text-[10px] font-black uppercase text-red-600 text-center animate-pulse">
+                                     {t("Insufficient Gem Balance", "رصيد الجواهر غير كافٍ")}
+                                   </p>
+                                 )}
+                               </div>
+                             );
+                          })() : (
+                            <button 
+                              onClick={() => setCheckoutStep(2)} 
+                              disabled={!isFormValid} 
+                              className={`w-full bg-[var(--c-ink)] text-[var(--c-bg)] px-6 py-5 text-xl font-black uppercase flex items-center justify-center gap-2 transition-all shadow-[6px_6px_0px_var(--c-orange)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none mb-8 ${!isFormValid ? "opacity-30 cursor-not-allowed grayscale" : "hover:opacity-90"}`}
+                            >
+                              {t("Next: Payment Details", "التالي: بيانات الدفع")} <ArrowLeft className="w-6 h-6 rotate-180" />
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {checkoutStep === 2 && (
+                    <div className="animate-in fade-in slide-in-from-right duration-300">
+                      <div className="mb-8 p-6 border-4 border-black bg-white shadow-[8px_8px_0px_#000]">
+                         <h4 className="text-lg font-black uppercase mb-4 text-[var(--c-purple)]">{t("Send Transfer To:", "أرسل التحويل إلى:")}</h4>
+                         
+                         <div className="space-y-4 mb-6">
+                            {paymentMethod === "other" ? (
+                               <div className="p-4 border-4 border-black bg-[var(--c-lime)]">
+                                  <div className="flex justify-between items-center mb-1">
+                                     <span className="text-[10px] font-black uppercase opacity-60 tracking-tighter">{otherMethod} ({otherCountry})</span>
+                                     <CheckCircle className="w-4 h-4" />
+                                  </div>
+                                  <p className="text-xs font-bold opacity-70">
+                                     {t("Please contact support to complete payment for this method.", "يرجى التواصل مع الدعم لإتمام الدفع لهذه الوسيلة.")}
+                                  </p>
+                               </div>
+                            ) : (
+                               settings.paymentAccounts
+                                .filter(acc => acc.id === paymentMethod)
+                                .map((acc) => (
+                               <div key={acc.id} className="p-4 border-4 border-black bg-[var(--c-lime)] shadow-[4px_4px_0px_#000]">
+                                  <div className="flex justify-between items-center mb-1">
+                                     <span className="text-[10px] font-black uppercase opacity-60 tracking-tighter">{acc.name}</span>
+                                     <CheckCircle className="w-4 h-4" />
+                                  </div>
+                                  <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
+                                     <span className="text-lg sm:text-xl font-black tracking-widest break-all text-center sm:text-left">{acc.value}</span>
+                                     <button 
+                                      onClick={(e) => { e.stopPropagation(); copyPaymentInfo(acc.value, acc.id); }}
+                                      className={`w-full sm:w-auto px-4 py-2 text-[10px] font-black uppercase border-2 border-black transition-all ${copiedId === acc.id ? "bg-[var(--c-orange)] text-black translate-x-0.5 translate-y-0.5 shadow-none" : "bg-black text-white hover:bg-white hover:text-black shadow-[2px_2px_0px_#000]"}`}
+                                     >
+                                       {copiedId === acc.id ? t("Copied!", "تم النسخ") : t("Copy", "نسخ")}
+                                     </button>
+                                  </div>
+                               </div>
+                               ))
+                            )}
+                         </div>
+
+                         <div className="pt-4 border-t-4 border-black/10">
+                            <label className="block text-sm font-black uppercase mb-2 text-[var(--c-purple)]">{t("Your Number/Account (Sender):", "الرقم أو الحساب المحول منه:")} *</label>
+                            <input 
+                              type="text" 
+                              value={senderValue} 
+                              onChange={(e) => setSenderValue(e.target.value)}
+                              placeholder={t("Enter the number you sent from", "أدخل الرقم الذي قمت بالتحويل منه")}
+                              className="w-full border-4 border-black p-3 font-bold text-sm bg-white"
+                            />
+                            <p className="text-[9px] font-bold opacity-60 mt-1 uppercase">{t("Required to match your payment", "ضروري لمطابقة عملية الدفع الخاصة بك")}</p>
+                         </div>
+                      </div>
+
+                      <div className="flex gap-4 mb-8">
+                         <button onClick={() => setCheckoutStep(1)} className="flex-1 border-4 border-black p-4 font-black uppercase text-sm hover:bg-black/5">{t("Back", "رجوع")}</button>
+                         <button 
+                          onClick={() => setCheckoutStep(3)} 
+                          disabled={!senderValue.trim()} 
+                          className={`flex-1 bg-[var(--c-lime)] border-4 border-black p-4 font-black uppercase text-sm shadow-[4px_4px_0px_#000] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all ${!senderValue.trim() && 'opacity-30 grayscale'}`}
+                         >
+                           {t("Next: Upload Proof", "التالي: رفع الإثبات")}
+                         </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {checkoutStep === 3 && (
+                    <div className="animate-in fade-in slide-in-from-right duration-300">
+                      <div className="mb-8 p-6 border-4 border-black bg-white shadow-[8px_8px_0px_#000]">
+                         <h4 className="text-lg font-black uppercase mb-4 text-[var(--c-purple)]">{t("Transfer Proof", "إثبات التحويل")}</h4>
+                         
+                         <div className="relative group cursor-pointer border-4 border-dashed border-black/30 p-8 text-center bg-black/5 hover:bg-[var(--c-lime)]/5 transition-all mb-4 overflow-hidden">
+                            {transferProof ? (
+                              <div className="relative animate-in zoom-in duration-300">
+                                 <img src={transferProof} className="max-h-48 mx-auto border-2 border-black shadow-[4px_4px_0px_#000]" />
+                                 <button onClick={(e) => { e.stopPropagation(); setTransferProof(null); }} className="absolute -top-4 -right-4 bg-red-600 text-white w-8 h-8 rounded-full border-4 border-black flex items-center justify-center hover:scale-110 transition-transform"> <X className="w-4 h-4" /> </button>
+                              </div>
+                            ) : (
+                              <>
+                                <ImagePlus className="w-12 h-12 mx-auto mb-4 opacity-40 group-hover:scale-110 transition-transform" />
+                                <p className="text-xs font-black uppercase opacity-60 leading-tight">{t("Tap to upload transfer screenshot", "اضغط لرفع صورة إثبات التحويل")}</p>
+                              </>
+                            )}
+                            <input type="file" accept="image/*" onChange={handleProofUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
+                         </div>
+                      </div>
+
+                      {isVerifying ? (
+                        <div className="flex flex-col items-center justify-center p-8 border-4 border-black bg-white mb-8 animate-pulse text-center">
+                           <Loader2 className="w-12 h-12 animate-spin mb-4" />
+                           <h4 className="text-lg font-black uppercase tracking-tighter">{t("Verifying Data...", "جاري التحقق من البيانات...")}</h4>
+                           <p className="text-[10px] font-bold opacity-60 mt-2 uppercase">{t("Please don't close the window", "يرجى عدم إغلاق النافذة")}</p>
+                        </div>
+                      ) : (
+                        <div>
+                          {!transferProof && (
+                             <p className="text-[10px] font-black uppercase text-red-600 mb-2 text-center animate-pulse">
+                               {t("Please upload a transfer screenshot to continue", "يرجى رفع صورة إثبات التحويل للمتابعة")}
+                             </p>
+                          )}
+                          <div className="flex gap-4 mb-8">
+                            <button onClick={() => setCheckoutStep(2)} className="flex-1 border-4 border-black p-4 font-black uppercase text-sm hover:bg-black/5">{t("Back", "رجوع")}</button>
+                            <button 
+                              onClick={submitOrder} 
+                              disabled={!transferProof} 
+                              className={`flex-1 bg-[var(--c-ink)] text-white border-4 border-black p-4 font-black uppercase text-sm shadow-[4px_4px_0px_var(--c-orange)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all ${!transferProof && 'opacity-30 grayscale'}`}
+                            >
+                              {t("Complete Order", "إتمام الطلب")}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {checkoutStep === 4 && (
+                    <div className="animate-in fade-in zoom-in duration-500 text-center py-8">
+                       <div className="w-24 h-24 bg-[var(--c-lime)] border-4 border-black rounded-full flex items-center justify-center mx-auto mb-6 shadow-[8px_8px_0px_#000] rotate-3">
+                          <CheckCircle className="w-14 h-14 text-black" />
+                       </div>
+                       <h3 className="text-2xl font-black uppercase mb-2 tracking-tighter">{t("Request Received!", "تم استلام طلبك بنجاح!")}</h3>
+                       <p className="text-sm font-bold opacity-70 mb-8 max-w-xs mx-auto">
+                          {t("The admin is verifying your payment. You'll receive a notification once the credits are added to your account.", "المسؤول يقوم بمراجعة عملية الدفع الآن. ستتلقى إشعاراً فور إضافة الرصيد إلى حسابك.")}
+                       </p>
+                       <div className="bg-black/5 border-4 border-black border-dashed p-4 mb-8">
+                          <p className="text-[10px] font-black uppercase opacity-60 mb-1">{t("Order Tracking ID", "رقم تتبع الطلب")}</p>
+                          <p className="text-xl font-black tracking-[0.2em]">{orderCheck.orderId}</p>
+                       </div>
+                       <button onClick={() => setModalOpen(false)} className="w-full bg-black text-white px-6 py-4 font-black uppercase shadow-[6px_6px_0px_var(--c-lime)] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all">{t("Close & Track", "إغلاق ومتابعة")}</button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* Verification Modal */}
-        {orderCheck.isOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
-            <div className="relative w-full max-w-sm mx-auto animate-in fade-in zoom-in duration-300">
-              {/* Shadow */}
-              <div className="absolute inset-0 bg-[var(--c-orange)] translate-x-3 translate-y-3 border-4 border-[var(--c-ink)]" />
-              
-              <div className="relative border-4 border-[var(--c-ink)] p-8 text-center flex flex-col items-center justify-center min-h-[250px]" style={{ backgroundColor: "var(--c-bg)" }}>
-                {orderCheck.step === "checking" ? (
-                  <>
-                    <Loader2 className="w-16 h-16 text-[var(--c-ink)] animate-spin mb-6" />
-                    <h3 className="text-xl font-black uppercase mb-2 text-[var(--c-ink)]" style={{ direction: lang === "ar" ? "rtl" : "ltr" }}>
-                      {t("Verifying Data...", "جاري مراجعة البيانات...")}
-                    </h3>
-                    <p className="text-sm font-bold opacity-70 text-[var(--c-ink)]" style={{ direction: lang === "ar" ? "rtl" : "ltr" }}>
-                      {t("Please wait while we prepare your request for", "يرجى الانتظار بينما نجهز طلبك لـ")} <br/>
-                      <span className="text-[var(--c-purple)] font-black text-lg">{game.name} - {selectedPkg?.name}</span>
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle className="w-16 h-16 text-[var(--c-lime)] mb-6 animate-in zoom-in duration-300" />
-                    <h3 className="text-xl font-black uppercase mb-2 text-[var(--c-ink)]" style={{ direction: lang === "ar" ? "rtl" : "ltr" }}>
-                      {t("Verification Complete!", "تمت المراجعة بنجاح!")}
-                    </h3>
-                    <p className="text-sm font-bold opacity-70 text-[var(--c-ink)]" style={{ direction: lang === "ar" ? "rtl" : "ltr" }}>
-                      {t("Redirecting you to WhatsApp...", "جاري تحويلك للمحادثة...")}
-                    </p>
-                    <div className="mt-4 p-2 border-2 border-[var(--c-ink)] bg-white shadow-[2px_2px_0px_var(--c-ink)]">
-                      <span className="text-[10px] font-black uppercase opacity-60 block tracking-widest leading-none mb-1">{t("Order ID", "رقم الطلب")}</span>
-                      <span className="text-lg font-black tracking-widest uppercase">{orderCheck.orderId}</span>
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
+
 
         {/* Other Payment Method Modal */}
         {isOtherModalOpen && (
@@ -856,130 +811,68 @@ export default function GameDetailPage() {
             <div className="relative w-full max-w-sm mx-auto animate-in zoom-in duration-300">
               <div className="absolute inset-0 bg-[var(--c-purple)] translate-x-3 translate-y-3 border-4 border-[var(--c-ink)]" />
               <div className="relative border-4 border-[var(--c-ink)] p-8 flex flex-col gap-6" style={{ backgroundColor: "var(--c-bg)" }}>
-                <h3 className="text-2xl font-black uppercase tracking-tighter text-[var(--c-ink)] text-center">
-                  {t("Other Payment Method", "طريقة دفع أخرى")}
-                </h3>
-
-                {/* Country Dropdown */}
+                <h3 className="text-2xl font-black uppercase tracking-tighter text-center">{t("Other Payment Method", "طريقة دفع أخرى")}</h3>
                 <div className="relative">
                   <label className="block text-[10px] font-black uppercase opacity-60 mb-1">{t("Select Country", "اختر الدولة")}</label>
-                  <button 
-                    onClick={() => setIsCountryDropdownOpen(!isCountryDropdownOpen)}
-                    className="w-full flex items-center justify-between p-3 border-4 border-[var(--c-ink)] bg-white font-black text-sm uppercase shadow-[4px_4px_0px_var(--c-ink)] hover:translate-y-0.5 hover:translate-x-0.5 hover:shadow-none transition-all"
-                  >
-                    <span>{otherCountry || t("Select...", "اختر...")}</span>
-                    <ChevronDown className={`w-5 h-5 transition-transform ${isCountryDropdownOpen ? "rotate-180" : ""}`} />
-                  </button>
+                  <button onClick={() => setIsCountryDropdownOpen(!isCountryDropdownOpen)} className="w-full flex items-center justify-between p-3 border-4 border-[var(--c-ink)] bg-white font-black text-sm uppercase shadow-[4px_4px_0px_var(--c-ink)] hover:translate-y-0.5 hover:translate-x-0.5 hover:shadow-none transition-all"> <span>{otherCountry || t("Select...", "اختر...")}</span> <ChevronDown className={`w-5 h-5 transition-transform ${isCountryDropdownOpen ? "rotate-180" : ""}`} /> </button>
                   {isCountryDropdownOpen && (
-                    <div className="absolute top-full left-0 right-0 z-50 mt-1 max-h-56 overflow-y-auto border-4 border-[var(--c-ink)] bg-white shadow-[6px_6px_0px_var(--c-ink)] scroll-smooth animate-in slide-in-from-top-2">
+                    <div className="absolute top-full left-0 right-0 z-50 mt-1 max-h-56 overflow-y-auto border-4 border-[var(--c-ink)] bg-white shadow-[6px_6px_0px_var(--c-ink)]">
                        {ARAB_COUNTRIES.map(country => (
-                         <button 
-                           key={country.name}
-                           onClick={() => {
-                             setOtherCountry(`${country.flag} ${country.name} ${country.suffix || ""}`.trim());
-                             setOtherCountryCode(country.code);
-                             setIsCountryDropdownOpen(false);
-                           }}
-                           className="w-full text-right p-3 hover:bg-[var(--c-lime)] border-b-2 border-[var(--c-ink)]/10 last:border-0 group transition-colors"
-                         >
-                           <div className="flex items-center justify-between gap-3">
-                             {country.suffix && (
-                               <span className={`text-[10px] font-black uppercase ${country.name === "فلسطين" ? "text-red-600 animate-pulse" : "opacity-50"}`}>
-                                 {country.suffix}
-                               </span>
-                             )}
-                             <span className="flex-1 text-sm font-black uppercase flex items-center justify-end gap-3">
-                               {country.name} <BrutalFlag code={country.code} />
-                             </span>
-                           </div>
-                         </button>
+                         <button key={country.name} onClick={() => { setOtherCountry(`${country.flag} ${country.name} ${country.suffix || ""}`.trim()); setOtherCountryCode(country.code); setIsCountryDropdownOpen(false); }} className="w-full text-right p-3 hover:bg-[var(--c-lime)] border-b-2 border-[var(--c-ink)]/10 last:border-0 group"> <div className="flex items-center justify-between gap-3"> {country.suffix && <span className={`text-[10px] font-black uppercase ${country.name === "فلسطين" ? "text-red-600 animate-pulse" : "opacity-50"}`}> {country.suffix} </span>} <span className="flex-1 text-sm font-black uppercase flex items-center justify-end gap-3"> {country.name} <BrutalFlag code={country.code} /> </span> </div> </button>
                        ))}
                     </div>
                   )}
                 </div>
-
-                {/* Method Input with Suggestions */}
                 <div className="relative">
-                  <label className="block text-[10px] font-black uppercase opacity-60 mb-1">{t("Payment System", "وسيلة الدفع")}</label>
-                  <input 
-                    type="text"
-                    value={otherMethodInput}
-                    onChange={(e) => {
-                      setOtherMethodInput(e.target.value);
-                      setIsSuggestionsOpen(true);
-                    }}
-                    onFocus={() => setIsSuggestionsOpen(true)}
-                    placeholder={t("e.g. STC Pay / PayPal", "مثال: STC Pay / PayPal ")}
-                    className="w-full p-3 border-4 border-[var(--c-ink)] bg-white font-black text-sm uppercase shadow-[4px_4px_0px_var(--c-ink)] focus:outline-none focus:bg-[var(--c-lime)]/10"
-                  />
-                  {isSuggestionsOpen && otherMethodInput.length > 0 && (
-                    <div className="absolute top-full left-0 right-0 z-50 mt-1 max-h-48 overflow-y-auto border-4 border-[var(--c-ink)] bg-white shadow-[6px_6px_0px_var(--c-ink)]">
-                      {PAYMENT_SUGGESTIONS.filter(s => s.toLowerCase().includes(otherMethodInput.toLowerCase())).map(suggestion => (
+                  <label className="block text-[10px] font-black uppercase opacity-60 mb-2">{t("Payment System", "وسيلة الدفع")}</label>
+                  {otherCountryCode ? (
+                    <div className="space-y-2 max-h-48 overflow-y-auto pr-2">
+                      {settings.paymentAccounts
+                        .filter(acc => acc.countryCode === otherCountryCode)
+                        .map(acc => (
                         <button 
-                          key={suggestion}
+                          key={acc.id}
                           onClick={() => {
-                            setOtherMethodInput(suggestion);
-                            setIsSuggestionsOpen(false);
+                            setOtherMethod(acc.name);
+                            setPaymentMethod(acc.id);
+                            setIsOtherModalOpen(false);
                           }}
-                          className="w-full text-left p-3 text-xs font-black hover:bg-[var(--c-orange)] border-b-2 border-[var(--c-ink)]/10 last:border-0"
+                          className={`w-full flex items-center justify-between p-3 border-4 transition-all ${paymentMethod === acc.id ? "border-black bg-[var(--c-lime)] translate-x-1 translate-y-1" : "border-black bg-white shadow-[4px_4px_0px_#000] hover:bg-black/5"}`}
                         >
-                          {suggestion}
+                          <span className="text-xs font-black uppercase">{acc.name}</span>
+                          {paymentMethod === acc.id && <CheckCircle className="w-4 h-4" />}
                         </button>
                       ))}
-                    </div>
-                  )}
-
-                  {/* Smart Warning for Custom Methods */}
-                  {otherMethodInput && !PAYMENT_SUGGESTIONS.some(s => s.toLowerCase() === otherMethodInput.toLowerCase()) && (
-                    <div className="bg-[var(--c-orange)]/10 border-4 border-[var(--c-orange)] p-3 flex flex-col gap-2 mt-4 animate-in fade-in slide-in-from-top-1 duration-300">
-                      <div className="flex items-center gap-2">
-                        <div className="w-5 h-5 bg-[var(--c-orange)] border-2 border-[var(--c-ink)] flex items-center justify-center -rotate-12">
-                          <Zap className="w-3.5 h-3.5 text-[var(--c-ink)] animate-pulse" />
+                      {settings.paymentAccounts.filter(acc => acc.countryCode === otherCountryCode).length === 0 && (
+                        <div className="p-4 border-4 border-dashed border-black/10 text-center">
+                          <p className="text-[10px] font-bold opacity-50 uppercase">{t("No specific wallets for this country yet. Contact support.", "لا توجد محافظ مضافة لهذه الدولة بعد. تواصل مع الدعم.")}</p>
                         </div>
-                        <p className="text-[10px] font-black uppercase text-[var(--c-ink)]">
-                          {t("Check Support Status", "تأكد من حالة الدعم")}
-                        </p>
-                      </div>
-                      <p className="text-[9px] font-bold opacity-70 leading-relaxed">
-                        {t("This method might need manual verification. Check with support first.", "هذه الطريقة قد تتطلب مراجعة يدوية. تأكد من توفرها عبر الدعم الفني.")}
-                      </p>
-                      <button 
-                        type="button"
-                        onClick={() => window.dispatchEvent(new CustomEvent('open-faq', { detail: { topic: 'payment' } }))}
-                        className="bg-[var(--c-ink)] text-white text-[9px] font-black uppercase py-2 border-2 border-[var(--c-ink)] shadow-[3px_3px_0px_var(--c-orange)] hover:translate-y-0.5 hover:shadow-none transition-all cursor-pointer"
-                      >
-                        {t("Ask about this method 💬", "اسأل عن هذه الوسيلة 💬")}
-                      </button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="p-4 border-4 border-black bg-black/5 text-center text-[10px] font-bold uppercase opacity-50">
+                      {t("Select country first", "اختر الدولة أولاً")}
                     </div>
                   )}
                 </div>
-
-                <div className="flex gap-4">
-                  <button 
-                    onClick={() => {
-                      if (otherCountry && otherMethodInput) {
-                        setOtherMethod(otherMethodInput);
-                        setPaymentMethod("other");
-                        setIsOtherModalOpen(false);
-                      }
-                    }}
-                    disabled={!otherCountry || !otherMethodInput}
-                    className="flex-1 bg-[var(--c-ink)] text-white p-4 font-black uppercase text-sm border-2 border-[var(--c-ink)] shadow-[4px_4px_0px_var(--c-orange)] hover:translate-y-0.5 hover:translate-x-0.5 hover:shadow-none transition-all disabled:opacity-30"
-                  >
-                    {t("Confirm", "تأكيد")}
-                  </button>
-                  <button 
-                    onClick={() => setIsOtherModalOpen(false)}
-                    className="flex-1 bg-white text-[var(--c-ink)] p-4 font-black uppercase text-sm border-2 border-[var(--c-ink)] shadow-[4px_4px_0px_var(--c-ink)] hover:translate-y-0.5 hover:translate-x-0.5 hover:shadow-none transition-all"
-                  >
-                    {t("Cancel", "إلغاء")}
-                  </button>
+                <div className="mt-4">
+                  <button onClick={() => setIsOtherModalOpen(false)} className="w-full bg-white text-[var(--c-ink)] p-4 font-black uppercase text-sm border-2 border-[var(--c-ink)] shadow-[4px_4px_0px_var(--c-ink)] hover:translate-y-0.5 hover:translate-x-0.5 hover:shadow-none transition-all"> {t("Cancel", "إلغاء")} </button>
                 </div>
               </div>
             </div>
           </div>
         )}
       </div>
+
+      {/* Tutorial Video Modal */}
+      {game.tutorialVideoUrl && (
+        <VideoTutorialModal 
+          isOpen={isTutorialOpen}
+          onClose={() => setIsTutorialOpen(false)}
+          videoUrl={game.tutorialVideoUrl}
+          gameName={game.name}
+        />
+      )}
     </>
   );
 }

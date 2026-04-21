@@ -1,5 +1,6 @@
 import React, { useState, useRef } from "react";
 import { useLang } from "./LangContext";
+import { useSettings } from "./SettingsContext";
 import { Gamepad2, ShieldCheck, FileText, X, ChevronUp, ChevronDown } from "lucide-react";
 import { Link } from "react-router-dom";
 import { BrutalFlag } from "./BrutalFlag";
@@ -81,6 +82,7 @@ const LegalModal = ({ isOpen, onClose, title, content, rtl }: { isOpen: boolean,
 
 export function Footer() {
   const { t, lang } = useLang();
+  const { settings } = useSettings();
 
   const [modalType, setModalType] = useState<"privacy" | "terms" | null>(null);
 
@@ -107,7 +109,7 @@ export function Footer() {
                 "وجهتك الأولى لشراء جواهر وشدات وعملات الألعاب بأمان وسرعة وموثوقية في مصر والشرق الأوسط."
               )}
             </p>
-            <a href="https://wa.me/201063006506" target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center bg-[var(--c-orange)] text-[var(--c-ink)] px-6 py-3 font-black uppercase text-sm border-2 border-[var(--c-bg)] hover:-translate-y-1 hover:bg-[var(--c-lime)] hover:shadow-[4px_4px_0px_var(--c-bg)] transition-all">
+            <a href={`https://wa.me/${settings.whatsappNumber}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center bg-[var(--c-orange)] text-[var(--c-ink)] px-6 py-3 font-black uppercase text-sm border-2 border-[var(--c-bg)] hover:-translate-y-1 hover:bg-[var(--c-lime)] hover:shadow-[4px_4px_0px_var(--c-bg)] transition-all">
               {t("Contact Support", "تواصل مع الدعم")}
             </a>
           </div>
@@ -126,10 +128,10 @@ export function Footer() {
             <div className="w-full md:w-auto">
               <h3 className="text-xl font-black uppercase mb-6 text-[var(--c-purple)]">{t("SUPPORT", "الدعم والمساعدة")}</h3>
               <ul className="space-y-3 text-sm font-bold opacity-80">
-                <li><a href="https://wa.me/201063006506" target="_blank" rel="noopener noreferrer" className="hover:text-[var(--c-lime)] transition-colors hover:translate-x-1 block">WhatsApp</a></li>
-                <li><a href="https://www.facebook.com/share/p/Lq6B2VLD9VrqaRqU/?mibextid=oFDknk" target="_blank" rel="noopener noreferrer" className="hover:text-[var(--c-lime)] transition-colors hover:translate-x-1 block">Facebook Page</a></li>
-                <li><a href="https://www.instagram.com/0_allord?igsh=bnAzc2NyNXpleGN0" target="_blank" rel="noopener noreferrer" className="hover:text-[var(--c-lime)] transition-colors hover:translate-x-1 block">Instagram</a></li>
-                <li><a href="https://t.me/allord00o" target="_blank" rel="noopener noreferrer" className="hover:text-[var(--c-lime)] transition-colors hover:translate-x-1 block">Telegram</a></li>
+                <li><a href={`https://wa.me/${settings.whatsappNumber}`} target="_blank" rel="noopener noreferrer" className="hover:text-[var(--c-lime)] transition-colors hover:translate-x-1 block">WhatsApp</a></li>
+                {settings.facebookLink && <li><a href={settings.facebookLink} target="_blank" rel="noopener noreferrer" className="hover:text-[var(--c-lime)] transition-colors hover:translate-x-1 block">Facebook Page</a></li>}
+                {settings.instagramLink && <li><a href={settings.instagramLink} target="_blank" rel="noopener noreferrer" className="hover:text-[var(--c-lime)] transition-colors hover:translate-x-1 block">Instagram</a></li>}
+                {settings.telegramLink && <li><a href={settings.telegramLink} target="_blank" rel="noopener noreferrer" className="hover:text-[var(--c-lime)] transition-colors hover:translate-x-1 block">Telegram</a></li>}
                 <li><button onClick={() => setModalType("privacy")} className="hover:text-[var(--c-lime)] transition-colors hover:translate-x-1 inline-flex items-center gap-2 mt-2 cursor-pointer"><ShieldCheck className="w-4 h-4" /> {t("Privacy Policy", "سياسة الخصوصية")}</button></li>
                 <li><button onClick={() => setModalType("terms")} className="hover:text-[var(--c-lime)] transition-colors hover:translate-x-1 inline-flex items-center gap-2 cursor-pointer"><FileText className="w-4 h-4" /> {t("Terms", "الشروط والأحكام")}</button></li>
               </ul>
@@ -151,7 +153,7 @@ export function Footer() {
             </div>
 
             <div className={`text-center ${isRtl ? 'md:text-right' : 'md:text-left'} flex-1`}>
-              <p className="text-xs font-bold opacity-80 uppercase tracking-widest mb-1">{t("Built with by", "صُنع بواسطة")}</p>
+              <p className="text-xs font-bold opacity-80 uppercase tracking-widest mb-1">{t("Built withnpm  by", "صُنع بواسطة")}</p>
               <p className="text-xl font-black uppercase leading-none tracking-tight">Abdullah Mustafa</p>
             </div>
 
@@ -170,7 +172,7 @@ export function Footer() {
 
               {/* Contact Button */}
               <a
-                href="https://wa.me/201063006506?text=مرحباً، أريد التحدث مع مطور المتجر"
+                href={`https://wa.me/${settings.whatsappNumber}?text=مرحباً، أريد التحدث مع مطور المتجر`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex-1 md:flex-none flex items-center justify-center bg-[#25D366] text-[var(--c-ink)] px-5 py-3 font-black uppercase text-xs border-2 border-[var(--c-ink)] shadow-[4px_4px_0px_#000] hover:translate-y-0.5 hover:translate-x-0.5 hover:shadow-[2px_2px_0px_#000] transition-all whitespace-nowrap"

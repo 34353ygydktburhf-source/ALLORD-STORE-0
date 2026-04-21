@@ -12,7 +12,7 @@ import {
   TeamScribbles,
   StickyWorks,
   RawStats,
-  
+  HomeCommunityTeaser,
   Footer,
 } from "@/components/ControlledChaos";
 
@@ -46,13 +46,12 @@ export default function ControlledChaosPage() {
       <GlobalStyles />
       <Navbar />
       <Hero />
-      <Marquee />
       <Manifesto />
       <StickyWorks />
+      <HomeCommunityTeaser />
       <ChaosServices />
       <TeamScribbles />
       <RawStats />
-      
       <Footer />
     </>
   );

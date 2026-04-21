@@ -1,11 +1,16 @@
 import React, { useState, useEffect, useRef } from "react";
-import { MessageSquareText, X, Gamepad2, ChevronUp, ChevronDown, ShieldCheck, CheckCircle, Clock, AlertCircle, Timer, Sparkles, Crown, Lock, Shield, Frown, Heart, Zap, Headset, FileText, Users, Smartphone, CreditCard } from "lucide-react";
+import { MessageSquareText, X, Gamepad2, ChevronUp, ChevronDown, ShieldCheck, CheckCircle, Clock, AlertCircle, Timer, Sparkles, Crown, Lock, Shield, Frown, Heart, Zap, Headset, FileText, Users, Smartphone, CreditCard, UserCircle, AlertTriangle } from "lucide-react";
+import { ComplaintModal } from "./ComplaintModal";
 import { useLang } from "./LangContext";
+import { useLocation, useNavigate } from "react-router-dom";
+import { useLogin } from "./LoginContext";
+import { useSettings } from "./SettingsContext";
 
 type Message = {
   id: string;
   sender: "bot" | "user";
   text: string;
+  faqId?: string;
   withAnimation?: "clock" | "sparkles" | "shield" | "frown" | "heart" | "zap" | "headset" | "fileText" | "users" | "smartphone" | "creditCard";
   type?: "status-card" | "lord-profile" | "security-cert";
   actions?: {
@@ -13,6 +18,7 @@ type Message = {
     url?: string;
     faqId?: string;
     icon?: "whatsapp" | "telegram";
+    className?: string;
   }[];
 };
 
@@ -103,19 +109,61 @@ const FAQ_DATA = [
     ar: { q: "هل لديكم قناة تليجرام للعروض؟", a: "نعم! انضم لأكثر من 50 ألف لاعب في قناة اللورد الرسمية لتصلك أحدث العروض والمسابقات." }
   },
   {
-    id: "q15",
-    en: { q: "Is there a store app?", a: "Coming very soon! We are developing the official Lord Store app for faster and easier experience." },
-    ar: { q: "هل يوجد تطبيق للمتجر على الجوال؟", a: "قريباً جداً! نحن نعمل على تطوير تطبيق اللورد الرسمي للأندرويد والآيفون لتجربة أسرع وأسهل." }
+    id: "q_community_how",
+    en: { q: "How to post in the community?", a: "To post an account or item for sale, go to the Community page and click 'Submit Post'. Fill in the details and add pictures. All posts are reviewed by admins within 30 minutes before appearing to the public." },
+    ar: { q: "كيف أنشر إعلاني في المجتمع؟", a: "لبيع حسابك أو عرض خدماتك، اذهب لصفحة المجتمع واضغط على 'أضف عرضك'. املأ البيانات وأضف الصور. كل المنشورات تخضع لمراجعة الإدارة خلال 30 دقيقة قبل ظهورها للجميع لضمان الجودة." }
+  },
+  {
+    id: "q_community_safe",
+    en: { q: "Is community trading safe?", a: "Yes, provided you use our Middleman system. Never trade directly or share your phone number in descriptions. The Middleman (Admin) ensures that the account is transferred only after payment is secured." },
+    ar: { q: "هل البيع والشراء في المجتمع آمن؟", a: "نعم، طالما أنك تستخدم 'نظام الوساطة' الخاص بنا. لا تتبادل البيانات الحساسة أو الأرقام في الوصف. الوسيط (الأدمن) يتدخل لضمان استلامك للمبلغ وتسليم العميل للحساب بأمان." }
+  },
+  {
+    id: "q_community_middleman",
+    en: { q: "Who is the Middleman?", a: "The Middleman is an official AL LORD admin who supervises the trade between two users. This service is provided to prevent scams and ensure both parties are satisfied." },
+    ar: { q: "من هو الوسيط (Middleman)؟", a: "الوسيط هو مسؤول رسمي من متجر اللورد يقوم بالإشراف على عملية البيع بين الطرفين. هذه الخدمة تضمن عدم تعرضك للنصب، حيث يتم استلام البيانات والأموال وتوزيعها بالعدل." }
+  },
+  {
+    id: "q_community_forbidden",
+    en: { q: "What is forbidden in the community?", a: "It is strictly forbidden to post external links, phone numbers, or any content that violates game terms. Any post containing personal contact info in the description will be automatically rejected." },
+    ar: { q: "ما هي الأشياء الممنوعة في المجتمع؟", a: "ممنوع تماماً وضع روابط خارجية، أرقام هواتف، أو أي محتوى مخالف لسياسات الألعاب. أي منشور يحتوي على بيانات اتصال شخصية في الوصف سيتم رفضه تلقائياً لحمايتكم من الاختراقات." }
+  },
+  {
+    id: "q_complaint_start",
+    en: { q: "Report Issue / Complaint", a: "We are sorry to hear you're having trouble. You can file a formal complaint or reach out to us on WhatsApp." },
+    ar: { q: "تقديم شكوى أو بلاغ", a: "نحن آسفون لسماع أنك تواجه مشكلة. يمكنك تقديم شكوى رسمية أو التواصل معنا عبر الواتساب." }
+  },
+  {
+    id: "complaint_info",
+    en: { q: "File Formal Complaint", a: "Please use our secure form to submit your complaint with image proof if necessary." },
+    ar: { q: "تقديم شكوى رسمية", a: "يرجى استخدام نموذجنا الآمن لتقديم شكواك مع إرفاق صورة إثبات إذا لزم الأمر." }
+  },
+  {
+    id: "q_admin_posts_how",
+    en: { q: "How admin announcements work?", a: "Whenever an official update is announced by AL LORD admins, it will have an 'Official' badge. These posts may feature interactive action links allowing you to easily browse the mentioned offer!" },
+    ar: { q: "كيف تعمل إعلانات وعروض الإدارة؟", a: "عندما ينشر أدمن متجر اللورد عرضاً أو تنبيهاً رسمياً، سيظهر عليه شارة مميزة (إعلان مسؤول). هذه المنشورات تحتوي أحياناً على زر تفاعلي ينقلك مباشرة لتصفح العرض المذكور بضغطة واحدة!" }
+  },
+  {
+    id: "q_community_hidden_contact",
+    en: { q: "How to add my contact info safely?", a: "When adding a new post in the community to sell an account, use the 'Secret Contact (Admin Only)' field to put your WhatsApp or FB link. This ensures ONLY the Lord Team can see your private info, protecting you from scammers while allowing us to contact you." },
+    ar: { q: "كيف أضيف رقم تواصلي في المجتمع بأمان؟", a: "لحمايتك من المحتالين، وفرنا حقل 'بيانات تواصل (للإدارة فقط)' عند نشر إعلانك في المجتمع. وضعك لرقمك أو رابط تواصلك في هذا الحقل يضمن أن طاقم اللورد فقط هو من يراه ويمكنه التواصل معك بشكل خاص لتأمين العملية بأعلى درجات الأمان." }
   }
 ];
 
 export function FaqChatWidget() {
   const { lang, t } = useLang();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { isLoggedIn, userData } = useLogin();
+  const { settings } = useSettings();
+
+  const isWidgetHidden = location.pathname === '/profile';
   const [isOpen, setIsOpen] = useState(false);
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
-  const [showTooltip, setShowTooltip] = useState(false);
+  const [showFaqTooltip, setShowFaqTooltip] = useState(false);
+  const [showCommunityTooltip, setShowCommunityTooltip] = useState(false);
   const [isTrackingMode, setIsTrackingMode] = useState(false);
   const [orderNumberInput, setOrderNumberInput] = useState("");
   
@@ -125,6 +173,7 @@ export function FaqChatWidget() {
 
   // New States for Upload
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [isComplaintModalOpen, setIsComplaintModalOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [currentOrderTracking, setCurrentOrderTracking] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -143,12 +192,31 @@ export function FaqChatWidget() {
     return () => window.removeEventListener("open-faq", handleOpenFaq);
   }, [lang]);
 
-  // Tooltip cycle
+  // Tooltip cycle for FAQ Assistant
   useEffect(() => {
     const interval = setInterval(() => {
-      setShowTooltip(true);
-      setTimeout(() => setShowTooltip(false), 3500); // hide after 3.5s
-    }, 8000); // trigger every 8s
+      setShowFaqTooltip(true);
+      setTimeout(() => setShowFaqTooltip(false), 4000); // hide after 4s
+    }, 12000); // trigger every 12s
+    
+    // Initial pop
+    setTimeout(() => setShowFaqTooltip(true), 1500);
+    setTimeout(() => setShowFaqTooltip(false), 5500);
+    
+    return () => clearInterval(interval);
+  }, []);
+
+  // Tooltip cycle for Community Button
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setShowCommunityTooltip(true);
+      setTimeout(() => setShowCommunityTooltip(false), 4000); // hide after 4s
+    }, 16000); // trigger every 16s
+
+    // Initial pop (staggered from FAQ so they don't overlap as heavily)
+    setTimeout(() => setShowCommunityTooltip(true), 7000);
+    setTimeout(() => setShowCommunityTooltip(false), 11000);
+
     return () => clearInterval(interval);
   }, []);
 
@@ -158,9 +226,20 @@ export function FaqChatWidget() {
         id: "m_welcome",
         sender: "bot",
         text: t("Hello 👋 How can I help you?", "أهلاً بك 👋 كيف يمكنني مساعدتك؟"),
+        actions: [
+          ...(isLoggedIn ? [{
+            label: lang === "en" ? "View My Profile 👤" : "عرض ملفي الشخصي 👤",
+            faqId: "go_profile",
+            className: "pulse-gold"
+          }] : []),
+          {
+            label: lang === "en" ? "Report Issue / Complaint 🚫" : "تقديم شكوى أو بلاغ 🚫",
+            faqId: "q_complaint_start"
+          }
+        ]
       }
     ]);
-  }, [lang, t]); 
+  }, [lang, t, isLoggedIn]); 
 
   // Auto-scroll to bottom of chat when messages change
   useEffect(() => {
@@ -213,13 +292,13 @@ export function FaqChatWidget() {
       if (faqId === "q_payment") {
         actions = [{
           label: lang === "en" ? "Contact Support on WhatsApp 🟢" : "تواصل مع الوكيل لتوفير طريقتك 🟢",
-          url: "https://wa.me/201063006506?text=لم أجد طريقة دفع مناسبة لي، أريد شحن عبر طريقة أخرى",
+          url: `https://wa.me/${settings.whatsappNumber}?text=${encodeURIComponent(lang === "en" ? "I didn't find my payment method, what to do?" : "لم أجد طريقة دفع مناسبة لي، أريد شحن عبر طريقة أخرى")}`,
           icon: "whatsapp"
         }];
       } else if (faqId === "q_how_to_pay") {
         actions = [{
           label: lang === "en" ? "Start Paying Now 🟢" : "ابدأ الدفع الآن 🟢",
-          url: "https://wa.me/201063006506?text=مرحباً، أريد البدء في عملية الدفع وتأكيد طلبي",
+          url: `https://wa.me/${settings.whatsappNumber}?text=${encodeURIComponent("مرحباً، أريد البدء في عملية الدفع وتأكيد طلبي")}`,
           icon: "whatsapp"
         }];
       } else if (faqId === "q9") {
@@ -232,6 +311,11 @@ export function FaqChatWidget() {
         actions = [{
           label: lang === "en" ? "Learn More about Lord 👑" : "تعرف على اللورد عن قرب 👑",
           faqId: "lord_profile"
+        }];
+      } else if (faqId === "community_rules") {
+        actions = [{
+          label: lang === "en" ? "Go to Community 🚀" : "انتقل لصفحة المجتمع 🚀",
+          url: "/community"
         }];
       } else if (faqId === "q5") {
         actions = [
@@ -257,13 +341,13 @@ export function FaqChatWidget() {
       } else if (faqId === "q7") {
         actions = [{
           label: lang === "en" ? "Fix My ID Now 🟢" : "تعديل الـ ID الآن 🟢",
-          url: "https://wa.me/201063006506?text=أخطأت في كتابة الـ ID الخاص بطلبي، أريد تعديله",
+          url: `https://wa.me/${settings.whatsappNumber}?text=${encodeURIComponent("أخطأت في كتابة الـ ID الخاص بطلبي، أريد تعديله")}`,
           icon: "whatsapp"
         }];
       } else if (faqId === "q12") {
         actions = [{
           label: lang === "en" ? "Chat with Agent 🎧" : "تحدث مع الوكيل الآن 🎧",
-          url: "https://wa.me/201063006506?text=مرحباً، أريد التحدث مع خدمة العملاء بخصوص استفسار خاص",
+          url: `https://wa.me/${settings.whatsappNumber}?text=${encodeURIComponent("مرحباً، أريد التحدث مع خدمة العملاء بخصوص استفسار خاص")}`,
           icon: "whatsapp"
         }];
       } else if (faqId === "q14") {
@@ -272,31 +356,66 @@ export function FaqChatWidget() {
           url: "https://t.me/AL_LORD_STORE",
           icon: "telegram"
         }];
-      } else if (faqId === "q2") {
+      } else if (faqId === "q_community_how") {
+        actions = [{
+          label: lang === "en" ? "Go to Community 🚀" : "انتقل لصفحة المجتمع 🚀",
+          url: "/community",
+          className: "pulse-gold"
+        }];
+      } else if (faqId === "q_community_safe") {
+        actions = [{
+          label: lang === "en" ? "Read Safety Rules 🛡️" : "اقرأ ميثاق الأمان 🛡️",
+          faqId: "community_rules"
+        }];
+      } else if (faqId === "q_community_middleman") {
+        actions = [{
+          label: lang === "en" ? "Request Middleman Now 🟢" : "اطلب وسيط الآن 🟢",
+          url: `https://wa.me/${settings.whatsappNumber}?text=${encodeURIComponent("مرحباً، أريد طلب خدمة الوسيط لإتمام عملية بيع/شراء حساب")}`,
+          icon: "whatsapp"
+        }];
+      } else if (faqId === "q_community_forbidden") {
+        actions = [{
+          label: lang === "en" ? "Community Rules 📜" : "قواعد المجتمع 📜",
+          faqId: "community_rules"
+        }];
+      } else if (faqId === "q_complaint_start") {
         actions = [
           {
-            label: lang === "en" ? "I didn't find my method ❌" : "لم أجد وسيلة دفع ❌",
-            faqId: "q_payment"
+            label: lang === "en" ? "File Formal Complaint 📄" : "تقديم شكوى رسمية 📄",
+            faqId: "complaint_info"
           },
           {
-            label: lang === "en" ? "How to pay? 🤔" : "كيف يتم الدفع؟ 🤔",
-            faqId: "q_how_to_pay"
+            label: lang === "en" ? "Report Problem on WhatsApp 🟢" : "إبلاغ عن مشكلة واتساب 🟢",
+            url: `https://wa.me/${settings.whatsappNumber}?text=${encodeURIComponent("أريد تقديم شكوى بخصوص معاملة أو مشكلة فنية")}`,
+            icon: "whatsapp"
           }
         ];
+      } else if (faqId === "q_admin_posts_how") {
+         actions = [{
+           label: lang === "en" ? "Explore Community 🚀" : "استكشف إعلانات الإدارة 🚀",
+           url: "/community",
+           className: "pulse-gold"
+         }];
+      } else if (faqId === "q_community_hidden_contact") {
+         actions = [{
+           label: lang === "en" ? "Read Safety Rules 🛡️" : "اقرأ ميثاق الأمان 🛡️",
+           faqId: "community_rules"
+         }];
       }
 
       setMessages(prev => [...prev, { 
         id: `m_b_${Date.now()}`, 
         sender: "bot", 
         text: answerText, 
+        faqId: faq.id,
         actions,
         withAnimation: 
           faqId === "q3" || faqId === "q6" ? "clock" : 
           faqId === "q0" || faqId === "q8" ? "sparkles" : 
-          faqId === "q4" ? "shield" : 
+          faqId === "q4" || faqId === "q_community_safe" || faqId === "q_community_hidden_contact" ? "shield" : 
           faqId === "q7" || faqId === "q11" ? "zap" :
           faqId === "q12" ? "headset" :
-          faqId === "q13" ? "fileText" :
+          faqId === "q13" || faqId === "q_admin_posts_how" ? "fileText" :
           faqId === "q14" ? "users" :
           faqId === "q15" ? "smartphone" :
           faqId === "q10" ? "creditCard" :
@@ -351,7 +470,7 @@ export function FaqChatWidget() {
         withAnimation: "heart",
         actions: [{
           label: lang === "en" ? "Contact Support Now 🟢" : "تواصل مع الدعم الفني الآن 🟢",
-          url: "https://wa.me/201063006506?text=أريد استرجاع مبلغ طلبي لأن الشحنة لم تصل بعد",
+          url: `https://wa.me/${settings.whatsappNumber}?text=${encodeURIComponent("أريد استرجاع مبلغ طلبي لأن الشحنة لم تصل بعد")}`,
           icon: "whatsapp"
         }]
       }]);
@@ -372,6 +491,22 @@ export function FaqChatWidget() {
         type: "lord-profile"
       }]);
     }, 1200);
+  };
+
+  const handleCommunityRules = () => {
+    setMessages(prev => [...prev, { id: `m_u_${Date.now()}`, sender: "user", text: lang === "en" ? "What are the rules?" : "ما هي القواعد؟" }]);
+    setIsTyping(true);
+    setTimeout(() => {
+      setIsTyping(false);
+      setMessages(prev => [...prev, { 
+        id: `m_b_${Date.now()}`, 
+        sender: "bot", 
+        text: lang === "en" 
+          ? "Community Rules:\n1. No links or phone numbers.\n2. Use Middleman for safety.\n3. Be respectful.\nFailure to follow leads to a permanent ban! 🛡️" 
+          : "قواعد المجتمع:\n1. يمنع منعا باتا وضع روابط أو أرقام هواتف.\n2. استخدم نظام الوساطة لضمان حقك.\n3. الاحترام المتبادل شرط أساسي.\nمخالفة القوانين تعرضك للحظر النهائي! 🛡️",
+        withAnimation: "shield"
+      }]);
+    }, 1000);
   };
 
   const handleDetailedHistory = () => {
@@ -449,28 +584,51 @@ export function FaqChatWidget() {
 
   return (
     <>
-      {/* Tooltip Bubble */}
-      {!isOpen && (
+      {/* Community Tooltip Bubble */}
+      {location.pathname === '/' && !isWidgetHidden && (
         <div 
-          className={`fixed bottom-[2rem] ${lang === "ar" ? "left-[5rem] origin-bottom-left" : "right-[5rem] origin-bottom-right"} z-[90] transition-all duration-500 flex items-center justify-center bg-white border-4 border-[var(--c-ink)] text-xs font-black px-3 py-2 uppercase shadow-[4px_4px_0px_var(--c-purple)] text-[var(--c-ink)] ${showTooltip ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-75 translate-y-2 pointer-events-none'}`}
+          className={`fixed bottom-[5.5rem] md:bottom-[6.5rem] ${lang === "ar" ? "left-[4.5rem] md:left-[5.5rem] origin-bottom-left" : "right-[4.5rem] md:right-[5.5rem] origin-bottom-right"} z-[89] transition-all duration-500 flex items-center justify-center bg-black border-4 border-[var(--c-ink)] text-xs font-black px-3 py-2 uppercase shadow-[4px_4px_0px_var(--c-lime)] text-[var(--c-lime)] ${showCommunityTooltip ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-75 translate-y-2 pointer-events-none'}`}
+        >
+          {t("New Post / Status! 🔥", "حالة أو منشور جديد! 🔥")}
+          <div className={`absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-black border-[var(--c-ink)] rotate-45 ${lang === "ar" ? "-left-[8px] border-b-4 border-l-4" : "-right-[8px] border-t-4 border-r-4"}`} />
+        </div>
+      )}
+
+      {/* Community Floating Button */}
+      {location.pathname === '/' && !isWidgetHidden && (
+        <button
+          onClick={() => navigate("/community")}
+          className={`fixed bottom-[5rem] md:bottom-[6rem] ${lang === "ar" ? "left-5 md:left-7" : "right-5 md:right-7"} z-[89] w-10 h-10 md:w-12 md:h-12 bg-white text-[var(--c-ink)] rounded-full flex items-center justify-center border-4 border-[var(--c-ink)] hover:scale-110 hover:-translate-y-2 hover:bg-black hover:text-[var(--c-lime)] transition-all shadow-[4px_4px_0px_#000] cursor-pointer ${isOpen ? 'translate-y-8 opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'}`}
+        >
+          <Users className="w-4 h-4 md:w-5 md:h-5" />
+          <div className="absolute -top-1 -right-1 w-3 h-3 md:w-4 md:h-4 bg-red-500 rounded-full border-2 border-black animate-bounce shadow-[2px_2px_0px_#000]" />
+        </button>
+      )}
+
+      {/* FAQ Tooltip Bubble */}
+      {!isOpen && !isWidgetHidden && location.pathname === '/' && (
+        <div 
+          className={`fixed bottom-[2rem] ${lang === "ar" ? "left-[5rem] origin-bottom-left" : "right-[5rem] origin-bottom-right"} z-[90] transition-all duration-500 flex items-center justify-center bg-white border-4 border-[var(--c-ink)] text-xs font-black px-3 py-2 uppercase shadow-[4px_4px_0px_var(--c-purple)] text-[var(--c-ink)] ${showFaqTooltip ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-75 translate-y-2 pointer-events-none'}`}
         >
           {t("FAQs & Help", "الأسئلة الشائعة")}
           <div className={`absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white border-[var(--c-ink)] rotate-45 ${lang === "ar" ? "-left-[8px] border-b-4 border-l-4" : "-right-[8px] border-t-4 border-r-4"}`} />
         </div>
       )}
 
-      {/* Floating Button */}
+      {/* FAQ Floating Button */}
+      {!isWidgetHidden && location.pathname === '/' && (
       <button
         onClick={() => setIsOpen(true)}
-        className={`fixed bottom-6 ${lang === "ar" ? "left-6" : "right-6"} z-[90] w-14 h-14 bg-[var(--c-orange)] text-[var(--c-ink)] rounded-full flex items-center justify-center border-4 border-[var(--c-ink)] hover:scale-110 hover:-translate-y-2 hover:bg-[var(--c-lime)] transition-all shadow-[4px_4px_0px_#000] cursor-pointer ${isOpen ? 'scale-0' : 'scale-100'}`}
+        className={`fixed bottom-4 md:bottom-6 ${lang === "ar" ? "left-4 md:left-6" : "right-4 md:right-6"} z-[90] w-12 h-12 md:w-14 md:h-14 bg-[var(--c-orange)] text-[var(--c-ink)] rounded-full flex items-center justify-center border-4 border-[var(--c-ink)] hover:scale-110 hover:-translate-y-2 hover:bg-[var(--c-lime)] transition-all shadow-[4px_4px_0px_#000] cursor-pointer ${isOpen ? 'scale-0' : 'scale-100'}`}
       >
-        <MessageSquareText className="w-6 h-6" />
+        <MessageSquareText className="w-5 h-5 md:w-6 md:h-6" />
       </button>
+      )}
 
       {/* Chat Box Modal */}
       {isOpen && (
         <div 
-          className={`fixed bottom-6 ${lang === "ar" ? "left-6" : "right-6"} z-[100] w-[350px] max-w-[calc(100vw-48px)] h-[550px] max-h-[85vh] flex flex-col bg-[var(--c-bg)] border-4 border-[var(--c-ink)] shadow-[8px_8px_0px_var(--c-ink)] animate-in slide-in-from-bottom-5`}
+          className={`fixed bottom-0 left-0 right-0 z-[100] w-full h-[75vh] md:w-[350px] md:h-[550px] md:bottom-6 ${lang === "ar" ? "md:left-6 md:right-auto" : "md:right-6 md:left-auto"} flex flex-col bg-[var(--c-bg)] border-t-4 md:border-4 border-[var(--c-ink)] md:shadow-[8px_8px_0px_var(--c-ink)] shadow-[0px_-4px_0px_var(--c-ink)] md:shadow-none animate-in slide-in-from-bottom-5`}
         >
           {/* Header */}
           <div className="shrink-0 flex items-center justify-between p-4 border-b-4 border-[var(--c-ink)] bg-[var(--c-lime)] relative z-20">
@@ -526,6 +684,21 @@ export function FaqChatWidget() {
                       {msg.withAnimation === "creditCard" && <CreditCard className="w-4 h-4 mt-0.5 animate-pulse shrink-0 text-orange-400" />}
                       {msg.text}
                     </div>
+
+                    {msg.faqId === "complaint_info" && (
+                       <div className="mt-4 p-4 border-4 border-black bg-[#ff5e00] text-black shadow-[4px_4px_0px_#000]">
+                          <h5 className="font-black uppercase text-xs mb-2">{t("Formal Complaint System", "نظام الشكاوى الرسمي")}</h5>
+                          <p className="text-[10px] font-bold leading-relaxed mb-4">
+                            {t("To file a formal complaint regarding an order or a user, please click the button below to open the secure form.", "تقديم شكوى رسمية بخصوص طلب أو مستخدم، يرجى الضغط على الزر أدناه لفتح النموذج الآمن.")}
+                          </p>
+                          <button 
+                            onClick={() => setIsComplaintModalOpen(true)}
+                            className="w-full bg-black text-white py-2 text-[10px] font-black uppercase border-2 border-black hover:bg-white hover:text-black transition-all shadow-[2px_2px_0px_#ccff00]"
+                          >
+                            {t("Open Form 📄", "فتح النموذج 📄")}
+                          </button>
+                       </div>
+                    )}
 
                     {msg.type === "security-cert" && (
                        <div className="mt-4 p-4 border-4 border-[var(--c-ink)] bg-white shadow-[6px_6px_0px_var(--c-lime)] relative overflow-hidden">
@@ -617,8 +790,8 @@ export function FaqChatWidget() {
                               target="_blank"
                               rel="noreferrer"
                               className={`flex-1 min-w-[120px] flex items-center justify-center gap-2 text-white p-2.5 border-2 border-[var(--c-ink)] shadow-[2px_2px_0px_#000] hover:translate-y-0.5 hover:shadow-[1px_1px_0px_#000] transition-all text-[10px] font-black uppercase ${
-                                act.icon === "telegram" ? "bg-[#0088cc]" : "bg-[#25D366]"
-                              }`}
+                                act.icon === "telegram" ? "bg-[#0088cc]" : act.icon === "whatsapp" ? "bg-[#25D366]" : "bg-[var(--c-orange)] text-[var(--c-ink)]"
+                              } ${act.className || ""}`}
                             >
                                {act.icon === "whatsapp" && (
                                  <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
@@ -638,6 +811,9 @@ export function FaqChatWidget() {
                               onClick={() => {
                                 if (act.faqId === "history_detailed") {
                                   handleDetailedHistory();
+                                } else if (act.faqId === "go_profile") {
+                                  setIsOpen(false);
+                                  navigate("/profile");
                                 } else if (act.faqId === "lord_profile") {
                                   handleLordProfile();
                                 } else if (act.faqId === "show_security_cert") {
@@ -646,11 +822,13 @@ export function FaqChatWidget() {
                                   handleRefundReceived();
                                 } else if (act.faqId === "refund_not_received") {
                                   handleRefundNotReceived();
+                                } else if (act.faqId === "community_rules") {
+                                  handleCommunityRules();
                                 } else {
                                   handleQuestionSelect(act.faqId!);
                                 }
                               }}
-                              className="flex-1 min-w-[120px] flex items-center justify-center p-2.5 border-2 border-[var(--c-ink)] bg-[var(--c-orange)] text-[var(--c-ink)] shadow-[2px_2px_0px_#000] hover:translate-y-0.5 hover:shadow-[1px_1px_0px_#000] transition-all text-[10px] font-black uppercase cursor-pointer"
+                              className={`flex-1 min-w-[120px] flex items-center justify-center p-2.5 border-2 border-[var(--c-ink)] bg-[var(--c-orange)] text-[var(--c-ink)] shadow-[2px_2px_0px_#000] hover:translate-y-0.5 hover:shadow-[1px_1px_0px_#000] transition-all text-[10px] font-black uppercase cursor-pointer ${act.className || ""}`}
                             >
                               {act.label}
                             </button>
@@ -701,7 +879,7 @@ export function FaqChatWidget() {
                
                {/* Real Chat (WhatsApp) Button */}
                <a 
-                 href="https://wa.me/201063006506?text=مرحباً اللورد، أحتاج مساعدة" 
+                 href={`https://wa.me/${settings.whatsappNumber}?text=${encodeURIComponent("مرحباً اللورد، أحتاج مساعدة")}`} 
                  target="_blank" 
                  rel="noreferrer"
                  className="shrink-0 flex items-center justify-center bg-[#25D366] text-[var(--c-ink)] h-12 px-3 focus:outline-none border-2 border-[var(--c-ink)] shadow-[2px_2px_0px_#000] hover:translate-y-0.5 hover:translate-x-0.5 hover:shadow-[1px_1px_0px_#000] transition-all font-black text-xs uppercase"
@@ -757,6 +935,20 @@ export function FaqChatWidget() {
             >
               <div className="relative h-full p-3 pt-4">
                  <div ref={questionsScrollRef} className={`absolute top-4 bottom-4 left-3 right-14 overflow-y-auto space-y-2 scroll-smooth px-1 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ${lang === "ar" ? "right-3 left-14" : ""}`}>
+                      {isLoggedIn && (
+                        <button
+                          onClick={() => {
+                            setIsOpen(false);
+                            navigate("/profile");
+                          }}
+                          className="w-full text-right bg-[var(--c-lime)] border-2 border-[var(--c-ink)] p-3 text-xs font-black uppercase transition-all hover:-translate-y-1 hover:shadow-[3px_3px_0px_#000]"
+                        >
+                          <div className="flex items-center gap-2">
+                            <UserCircle className="w-4 h-4" />
+                            {lang === "en" ? "MY PROFILE (DASHBOARD)" : "ملفي الشخصي (لوحة التحكم)"}
+                          </div>
+                        </button>
+                      )}
                       <button
                         onClick={() => handleQuestionSelect("track")}
                         disabled={isTyping}
@@ -929,6 +1121,10 @@ export function FaqChatWidget() {
           100% { transform: scale(1); opacity: 1; }
         }
       `}</style>
+      <ComplaintModal 
+        isOpen={isComplaintModalOpen} 
+        onClose={() => setIsComplaintModalOpen(false)} 
+      />
     </>
   );
 }

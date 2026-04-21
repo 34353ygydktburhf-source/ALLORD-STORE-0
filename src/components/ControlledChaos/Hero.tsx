@@ -5,20 +5,23 @@ import { BrutalButton } from "./BrutalButton";
 import { DrawSVG } from "./DrawSVG";
 import { useLang } from "./LangContext";
 import { BrutalFlag } from "./BrutalFlag";
+import { useSettings } from "./SettingsContext";
 import { Link } from "react-router-dom";
 
 export function Hero() {
   const container = useRef<HTMLElement>(null);
   const { t } = useLang();
+  const { settings } = useSettings();
 
   useLayoutEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      const x = e.clientX / window.innerWidth - 0.5;
+      const y = e.clientY / window.innerHeight - 0.5;
+      gsap.to(".parallax-layer", { x: x * 50, y: y * 50, duration: 1 });
+      gsap.to(".parallax-layer-rev", { x: x * -40, y: y * -40, duration: 1 });
+    };
+
     const ctx = gsap.context(() => {
-      const handleMouseMove = (e: MouseEvent) => {
-        const x = e.clientX / window.innerWidth - 0.5;
-        const y = e.clientY / window.innerHeight - 0.5;
-        gsap.to(".parallax-layer", { x: x * 50, y: y * 50, duration: 1 });
-        gsap.to(".parallax-layer-rev", { x: x * -40, y: y * -40, duration: 1 });
-      };
       window.addEventListener("mousemove", handleMouseMove);
 
       const tl = gsap.timeline();
@@ -28,7 +31,11 @@ export function Hero() {
         scale: 0, rotation: -180, duration: 0.6, ease: "elastic.out(1, 0.5)",
       }, "-=0.5");
     }, container);
-    return () => ctx.revert();
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      ctx.revert();
+    };
   }, []);
 
   return (
@@ -115,7 +122,7 @@ export function Hero() {
 
         <div className="mt-12 flex items-center justify-center gap-6 flex-wrap">
           <a href="#games"><BrutalButton>{t("View Games", "تصفح الألعاب")}</BrutalButton></a>
-          <a href="https://wa.me/201063006506" target="_blank" rel="noopener noreferrer" className="group flex items-center gap-2 text-lg font-bold uppercase underline underline-offset-4 decoration-[var(--c-orange)] decoration-2">
+          <a href={`https://wa.me/${settings.whatsappNumber}`} target="_blank" rel="noopener noreferrer" className="group flex items-center gap-2 text-lg font-bold uppercase underline underline-offset-4 decoration-[var(--c-orange)] decoration-2">
             {t("Order Now", "اطلب الآن")} <ArrowUpRight className="w-5 h-5 transition-transform group-hover:-translate-y-1 group-hover:translate-x-1" />
           </a>
         </div>

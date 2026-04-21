@@ -47,6 +47,36 @@ export function GlobalStyles() {
           -webkit-text-stroke: 2px var(--c-ink);
           color: transparent;
         }
+
+        @keyframes spin-slow {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+
+        .animate-spin-slow {
+          animation: spin-slow 8s linear infinite;
+        }
+
+        @keyframes gem-burst {
+          0% { transform: scale(0) rotate(0deg); opacity: 1; }
+          50% { opacity: 1; }
+          100% { transform: scale(1.5) rotate(360deg) translate(var(--tx), var(--ty)); opacity: 0; }
+        }
+
+        @keyframes gem-float {
+          0%, 100% { transform: translateY(0) rotate(0deg); }
+          50% { transform: translateY(-20px) rotate(10deg); }
+        }
+
+        @keyframes sparkle {
+          0%, 100% { opacity: 0; transform: scale(0); }
+          50% { opacity: 1; transform: scale(1.2); }
+        }
+
+        .gem-animation-particle {
+          position: absolute;
+          animation: gem-burst 1s ease-out forwards;
+        }
       `}</style>
 
       <svg style={{ position: "absolute", width: 0, height: 0 }}>

@@ -10,4 +10,7 @@ export { RawStats } from "./RawStats";
 export { ClientChaos } from "./ClientChaos";
 export { StudioGallery } from "./StudioGallery";
 export { Footer } from "./Footer";
+export { HomeCommunityTeaser } from "./HomeCommunityTeaser";
+export { CommunityAds } from "./CommunityAds";
 export { LangProvider } from "./LangContext";
+export { ArabGamingHub } from "./ArabGamingHub";

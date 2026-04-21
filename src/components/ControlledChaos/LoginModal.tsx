@@ -14,6 +14,7 @@ export function LoginModal() {
   const [showTerms, setShowTerms] = useState(false);
   const [status, setStatus] = useState<"idle" | "loading" | "success">("idle");
   const [copied, setCopied] = useState(false);
+  const [pendingUserData, setPendingUserData] = useState<any>(null);
   const termsScrollRef = useRef<HTMLDivElement>(null);
   const modalScrollRef = useRef<HTMLDivElement>(null);
 
@@ -39,7 +40,12 @@ export function LoginModal() {
     // Simulate API call
     setTimeout(() => {
       setStatus("success");
-      // Data is moved to login() call in the success screen or right here
+      setPendingUserData({
+        name: username,
+        contact: inputValue,
+        method: loginMethod,
+        date: new Date().toLocaleDateString()
+      });
     }, 1500);
   };
 
@@ -47,14 +53,12 @@ export function LoginModal() {
     setStatus("loading");
     setTimeout(() => {
       setStatus("success");
-      const googleData = {
+      setPendingUserData({
         name: "Google User",
         contact: "google_account@gmail.com",
         method: "google" as const,
         date: new Date().toLocaleDateString()
-      };
-      login("user", googleData);
-      setStatus("idle");
+      });
     }, 1500);
   };
 
@@ -120,9 +124,9 @@ export function LoginModal() {
                       setCopied(true);
                       setTimeout(() => {
                         setCopied(false);
-                        login("user"); // Changed from closeLogin() to login("user")
+                        login("user", pendingUserData);
                         setStatus("idle");
-                        // Reset form
+                        setPendingUserData(null);
                         setInputValue("");
                         setUsername("");
                         setAgreedToTerms(false);
@@ -153,28 +157,40 @@ export function LoginModal() {
               </div>
 
               <div className="space-y-6">
-                {/* Social Login */}
-                <button 
-                  onClick={handleGoogleLogin}
-                  disabled={status === "loading"}
-                  className="w-full flex items-center justify-center gap-3 border-4 border-[var(--c-ink)] px-4 py-3 text-sm font-black uppercase hover:bg-black/5 transition-colors"
-                >
-                  {status === "loading" ? (
-                     <Loader2 className="w-5 h-5 animate-spin" />
-                  ) : (
-                    <>
-                      <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />
-                      {t("Continue with Google", "المتابعة باستخدام جوجل")}
-                    </>
-                  )}
-                </button>
+                {/* Unified Access Area */}
+                <div className="space-y-3">
+                  {/* Social Login */}
+                  <button 
+                    onClick={handleGoogleLogin}
+                    disabled={status === "loading"}
+                    className="w-full flex items-center justify-center gap-3 border-4 border-[var(--c-ink)] px-4 py-3 text-sm font-black uppercase hover:bg-black/10 transition-all font-bold"
+                  >
+                    {status === "loading" ? (
+                       <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <>
+                        <img src="https://www.google.com/favicon.ico" alt="Google" className="w-5 h-5" />
+                        {t("Continue with Google", "المتابعة باستخدام جوجل")}
+                      </>
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => login("guest")}
+                    disabled={status === "loading"}
+                    className="w-full border-4 border-[var(--c-ink)] bg-[var(--c-lime)] px-6 py-4 text-sm font-black uppercase flex items-center justify-center gap-2 hover:bg-black hover:text-[var(--c-lime)] transition-all shadow-[6px_6px_0px_var(--c-ink)] active:translate-x-1 active:translate-y-1 active:shadow-none"
+                  >
+                    <User className="w-4 h-4" /> {t("Continue as Guest", "المتابعة كضيف")}
+                  </button>
+                </div>
 
                 <div className="relative flex items-center justify-center">
                   <div className="absolute inset-0 flex items-center">
                     <div className="w-full border-t-2 border-[var(--c-ink)] opacity-20"></div>
                   </div>
                   <span className="relative px-4 text-xs font-black uppercase tracking-widest" style={{ backgroundColor: "var(--c-bg)" }}>
-                    {t("OR", "أو")}
+                    {t("OR USE EMAIL/PHONE", "أو استخدم البريد/الهاتف")}
                   </span>
                 </div>
 
@@ -330,25 +346,6 @@ export function LoginModal() {
                       </>
                     )}
                   </button>
-
-                  {/* Guest Login */}
-                  <div className="relative flex items-center justify-center py-2">
-                    <div className="absolute inset-0 flex items-center">
-                      <div className="w-full border-t-2 border-[var(--c-ink)] opacity-10"></div>
-                    </div>
-                    <span className="relative px-4 text-[10px] font-black uppercase tracking-widest opacity-40" style={{ backgroundColor: "var(--c-bg)" }}>
-                      {t("OR JUST BROWSE", "أو تصفح فقط")}
-                    </span>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => login("guest")}
-                    disabled={status === "loading"}
-                    className="w-full border-4 border-[var(--c-ink)] border-dashed px-6 py-3 text-sm font-black uppercase flex items-center justify-center gap-2 hover:bg-[var(--c-lime)] hover:border-solid transition-all"
-                  >
-                    <User className="w-4 h-4" /> {t("Continue as Guest", "المتابعة كضيف")}
-                  </button>
                 </form>
               </div>
             </>
@@ -358,4 +355,5 @@ export function LoginModal() {
       </div>
     </div>
   );
+
 }

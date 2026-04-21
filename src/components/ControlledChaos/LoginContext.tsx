@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from "react";
+import { useNotifications } from "./NotificationContext";
 
 interface UserData {
+  id: string;
   name: string;
   contact: string;
   method: "email" | "phone" | "google";
@@ -37,6 +39,7 @@ interface LoginContextType {
 const LoginContext = createContext<LoginContextType | undefined>(undefined);
 
 export function LoginProvider({ children }: { children: ReactNode }) {
+  const { addNotification } = useNotifications();
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -54,11 +57,33 @@ export function LoginProvider({ children }: { children: ReactNode }) {
     if (savedLogin === "true") {
       setIsLoggedIn(true);
       setUserType(savedUserType as "user" | "guest");
+      
       if (savedUserData) {
-        setUserData(JSON.parse(savedUserData));
+        try {
+          const parsedData = JSON.parse(savedUserData);
+          if (parsedData && typeof parsedData === 'object') {
+            // Patch: if user has no ID, generate one
+            if (!parsedData.id) {
+              parsedData.id = `AL-${Math.floor(10000 + Math.random() * 90000)}`;
+              localStorage.setItem("user_data", JSON.stringify(parsedData));
+              localStorage.setItem("user_id", parsedData.id);
+            }
+            setUserData(parsedData);
+          }
+        } catch (e) {
+          console.error("Failed to parse user data", e);
+        }
       }
+      
       if (storedAccounts) {
-        setSavedAccounts(JSON.parse(storedAccounts));
+        try {
+          const parsedAccounts = JSON.parse(storedAccounts);
+          if (Array.isArray(parsedAccounts)) {
+            setSavedAccounts(parsedAccounts);
+          }
+        } catch (e) {
+          console.error("Failed to parse accounts", e);
+        }
       }
     }
   }, []);
@@ -72,25 +97,46 @@ export function LoginProvider({ children }: { children: ReactNode }) {
   const openProfile = () => setIsProfileOpen(true);
   const closeProfile = () => setIsProfileOpen(false);
 
-  const login = (type: "user" | "guest", data?: UserData) => {
+  const login = (type: "user" | "guest", data?: Omit<UserData, 'id'> & { id?: string }) => {
     setIsLoggedIn(true);
     setUserType(type);
     localStorage.setItem("is_logged_in", "true");
     localStorage.setItem("user_type", type);
     
     if (data) {
-      setUserData(data);
-      localStorage.setItem("user_data", JSON.stringify(data));
-      localStorage.setItem("user_name", data.name);
-      localStorage.setItem("user_contact", data.contact);
+      const finalData: UserData = {
+        ...data,
+        id: data.id || `AL-${Math.floor(10000 + Math.random() * 90000)}`
+      } as UserData;
+
+      setUserData(finalData);
+      localStorage.setItem("user_data", JSON.stringify(finalData));
+      localStorage.setItem("user_name", finalData.name);
+      localStorage.setItem("user_contact", finalData.contact);
+      localStorage.setItem("user_id", finalData.id);
+      
+      addNotification(
+         "مرحباً بك مجدداً! 👋", 
+         `أهلاً بك يا ${data.name} في متجر اللورد. نتمنى لك تجربة ممتعة.`,
+         "success"
+      );
     } else if (type === "guest") {
       const guestData: UserData = {
+        id: `GUEST-${Math.floor(1000 + Math.random() * 9000)}`,
         name: "Guest",
         contact: "Anonymous Access",
         method: "google",
         date: new Date().toLocaleDateString()
       };
       setUserData(guestData);
+      localStorage.setItem("user_data", JSON.stringify(guestData));
+      localStorage.setItem("user_id", guestData.id);
+      
+      addNotification(
+        "دخول كضيف 🕵️", 
+        "أهلاً بك! يمكنك تصفح الموقع بالكامل كضيف الآن.",
+        "info"
+      );
     }
     
     closeLogin();

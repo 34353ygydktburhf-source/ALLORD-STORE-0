@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { Heart, Search, Filter, ArrowUpRight, ArrowLeft, Gamepad2, Languages, Loader2, CheckCircle } from "lucide-react";
-import { GAMES_DATA } from "@/components/ControlledChaos/StickyWorks";
+import { Heart, Search, Filter, ArrowUpRight, ArrowLeft, Gamepad2, Languages, Loader2, CheckCircle, Flame, Star, Trophy, Sparkles } from "lucide-react";
+import { useGames } from "@/components/ControlledChaos/GamesContext";
+import { useSettings } from "@/components/ControlledChaos/SettingsContext";
 import { GlobalStyles } from "@/components/ControlledChaos/GlobalStyles";
 import { BrutalButton } from "@/components/ControlledChaos/BrutalButton";
 import { Link } from "react-router-dom";
 import { slugify } from "@/pages/GameDetailPage";
 import { useLang } from "@/components/ControlledChaos/LangContext";
+import { useWallet } from "@/components/ControlledChaos/WalletContext";
+import { GemIcon } from "@/components/ControlledChaos/GemIcon";
+import { useLogin } from "@/components/ControlledChaos/LoginContext";
 
 type Category = "all" | "mobile" | "pc";
 
@@ -13,6 +17,10 @@ export default function GamesPage() {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<Category>("all");
   const { lang, toggleLang, t } = useLang();
+  const { games } = useGames();
+  const { settings } = useSettings();
+  const { balance } = useWallet();
+  const { isLoggedIn } = useLogin();
   const [favorites, setFavorites] = useState<string[]>(() => {
     try { return JSON.parse(localStorage.getItem("al-lord-favorites") || "[]"); } catch { return []; }
   });
@@ -34,7 +42,7 @@ export default function GamesPage() {
         const msg = lang === "ar" 
           ? `مرحباً، أريد شحن لعبة ${gameName} بشكل مباشر. اسم الحساب في الموقع: ${userContact}`
           : `Hello, I want to top up ${gameName} directly. My account contact: ${userContact}`;
-        window.open(`https://wa.me/201063006506?text=${encodeURIComponent(msg)}`, "_blank");
+        window.open(`https://wa.me/${settings.whatsappNumber}?text=${encodeURIComponent(msg)}`, "_blank");
         setOrderCheck(prev => ({ ...prev, isOpen: false }));
       }, 1500);
     }, 2000);
@@ -48,7 +56,7 @@ export default function GamesPage() {
     setFavorites((prev) => prev.includes(name) ? prev.filter((f) => f !== name) : [...prev, name]);
   };
 
-  const filtered = GAMES_DATA.filter((g) => {
+  const filtered = games.filter((g) => {
     const matchSearch = g.name.toLowerCase().includes(search.toLowerCase());
     const matchCategory = category === "all" || g.category === category;
     return matchSearch && matchCategory;
@@ -70,6 +78,16 @@ export default function GamesPage() {
             <Link to="/" className="flex items-center gap-2 text-sm font-bold uppercase hover:text-[var(--c-orange)] transition-colors">
               <ArrowLeft className="w-5 h-5" /> {t("Back", "رجوع")}
             </Link>
+            {/* Redundant mobile balance hidden per user request */}
+            {isLoggedIn && (
+              <Link 
+                to="/buy-gems" 
+                className="hidden flex-row items-center gap-1 border-2 px-1.5 py-1 transition-all text-xs font-black cursor-pointer bg-[#b084ff] text-black border-black shadow-[2px_2px_0px_#000]"
+              >
+                 <span>{balance}</span>
+                 <GemIcon size={14} />
+              </Link>
+            )}
             <div className="hidden md:flex items-center gap-2" dir="ltr">
               <Gamepad2 className="w-6 h-6 text-[var(--c-lime)]" />
               <span className="text-2xl font-black uppercase">AL LORD STORE</span>
@@ -80,7 +98,16 @@ export default function GamesPage() {
               <Languages className="w-4 h-4" />
               {lang === "en" ? "عربي" : "EN"}
             </button>
-            <a href="https://wa.me/201063006506" target="_blank" rel="noopener noreferrer">
+            {isLoggedIn && (
+              <Link 
+                to="/buy-gems" 
+                className="hidden md:flex flex-row items-center gap-2 border-2 px-2.5 py-1 transition-all text-sm font-black hover:-translate-y-0.5 cursor-pointer bg-[#b084ff] text-black border-black shadow-[2px_2px_0px_#000] hover:shadow-[4px_4px_0px_#000]"
+              >
+                 <span>{balance.toLocaleString()}</span>
+                 <GemIcon size={16} />
+              </Link>
+            )}
+            <a href={`https://wa.me/${settings.whatsappNumber}`} target="_blank" rel="noopener noreferrer">
               <BrutalButton>{t("Order Now", "اطلب الآن")}</BrutalButton>
             </a>
           </div>
@@ -142,7 +169,7 @@ export default function GamesPage() {
 
                 {/* Card */}
                 <div
-                  className={`relative ${g.color} border-4 border-[var(--c-ink)] overflow-hidden group-hover:translate-x-1 group-hover:translate-y-1 transition-transform duration-300`}
+                  className={`relative ${g.color} border-4 border-[var(--c-ink)] group-hover:translate-x-1 group-hover:translate-y-1 transition-transform duration-300`}
                 >
                   {/* Image */}
                   <div className="h-48 bg-cover bg-center relative" style={{ backgroundImage: `url(${g.image})` }}>
@@ -155,9 +182,17 @@ export default function GamesPage() {
                         className={`w-5 h-5 ${favorites.includes(g.name) ? "fill-red-500 text-red-500" : ""}`}
                       />
                     </button>
-                    <span className="absolute top-4 left-4 px-3 py-1 bg-[var(--c-ink)] text-[var(--c-bg)] text-xs font-bold uppercase">
+                    <span className="absolute top-4 left-4 px-3 py-1 bg-[var(--c-ink)] text-[var(--c-bg)] text-xs font-bold uppercase transition-transform group-hover:scale-110">
                       {g.cat}
                     </span>
+                    {g.discount != null && g.discount > 0 && (
+                      <div className="absolute top-0 left-0 z-20 pointer-events-none -translate-x-2 -translate-y-2">
+                        <div className="bg-red-600 text-white flex flex-col items-center justify-center px-4 py-2 border-4 border-black shadow-[4px_4px_0px_rgba(0,0,0,0.3)] relative min-w-[75px]">
+                          <span className="text-[10px] font-black tracking-tighter leading-none mb-1 opacity-80">{t("SALE", "خصم")}</span>
+                          <span className="text-2xl font-black leading-none">-{g.discount}%</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Content */}
